@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import LandingLayout from "@pages/layouts/LandingLayout";
 import Login from "@pages/Login";
 import Home from "@pages/Home";
-import SecondPage from "@pages/SecondPage";
+import Map from "@pages/Map";
 
 const NotFound = () => (
   <div className="h-dvh bg-header flex flex-col items-center justify-center">
@@ -22,7 +22,7 @@ const Routers = () => {
       {/* Admin route inside layout */}
       <Route element={<LandingLayout />}>
         <Route path="admin" element={<Home />} />
-        <Route path="map" element={<SecondPage />} />
+        <Route path="map" element={<Map />} />
       </Route>
 
       {/* Catch-all 404 with redirect */}

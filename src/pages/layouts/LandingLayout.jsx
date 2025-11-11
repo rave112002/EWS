@@ -1,9 +1,4 @@
-import {
-  ContainerOutlined,
-  DesktopOutlined,
-  MailOutlined,
-  PieChartOutlined,
-} from "@ant-design/icons";
+import { GlobalOutlined, PieChartOutlined } from "@ant-design/icons";
 import { rbLogo } from "@assets/images";
 import { Button, Layout, Menu } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
@@ -20,7 +15,7 @@ const LandingLayout = () => {
     },
     {
       key: "2",
-      icon: <PieChartOutlined />,
+      icon: <GlobalOutlined />,
       label: <Link to={"/map"}>Map</Link>,
     },
     // {
