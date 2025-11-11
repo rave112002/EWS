@@ -23,11 +23,6 @@ const LandingLayout = () => {
       icon: <PieChartOutlined />,
       label: <Link to={"/map"}>Map</Link>,
     },
-    {
-      key: "3",
-      icon: "",
-      label: <Link to={"/scratch"}>Scratch</Link>,
-    },
     // {
     //   key: "sub1",
     //   label: "Navigation One",

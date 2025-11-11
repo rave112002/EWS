@@ -3,7 +3,6 @@ import LandingLayout from "@pages/layouts/LandingLayout";
 import Login from "@pages/Login";
 import Home from "@pages/Home";
 import SecondPage from "@pages/SecondPage";
-import Scratch from "@pages/Scratch";
 
 const NotFound = () => (
   <div className="h-dvh bg-header flex flex-col items-center justify-center">
@@ -24,7 +23,6 @@ const Routers = () => {
       <Route element={<LandingLayout />}>
         <Route path="admin" element={<Home />} />
         <Route path="map" element={<SecondPage />} />
-        <Route path="scratch" element={<Scratch />} />
       </Route>
 
       {/* Catch-all 404 with redirect */}
