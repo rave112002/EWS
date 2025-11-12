@@ -3,7 +3,7 @@ import React from "react";
 
 const Map = () => {
   return (
-    <div className="w-full h-full bg-red-200">
+    <div className="w-full h-full">
       <MapView />
     </div>
   );

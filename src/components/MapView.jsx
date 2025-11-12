@@ -1,43 +1,31 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-
-import iconUrl from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
-
-const defaultIcon = L.icon({
-  iconUrl,
-  shadowUrl: iconShadow,
-});
-
-L.Marker.prototype.options.icon = defaultIcon;
+import React, { useEffect, useRef } from "react";
+import maplibregl from "maplibre-gl";
+// import axios from "axios";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const MapView = () => {
-  const position = [14.5176, 121.0527]; // Example: Taguig City coordinates
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+
+  useEffect(() => {
+    if (map.current) return; // prevent multiple maps
+
+    // Initialize MapLibre
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style:
+        "https://api.jawg.io/styles/b40385ad-10b5-40e2-8c6c-2459ccf5e721.json?access-token=dyAlxp8V4w8FBKBi4Sbus1xMvIg6ojhrGV2mcZu0NacG33dYSdUP4aYMF9rSZS83",
+      center: [121.0527, 14.5176], // Taguig City
+      zoom: 12,
+    });
+  });
 
   return (
-    <div className="w-full h-full">
-      <MapContainer
-        center={position}
-        zoom={13}
-        scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <Marker position={position}>
-          <Popup>
-            <strong>Taguig City</strong>
-            <br />
-            Example location using OpenStreetMap.
-          </Popup>
-        </Marker>
-      </MapContainer>
-    </div>
+    <div
+      ref={mapContainer}
+      style={{ width: "100%", height: "88vh", borderRadius: "8px" }}
+      // className="w-full h-full"
+    />
   );
 };
 

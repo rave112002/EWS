@@ -1,5 +1,5 @@
 import { GlobalOutlined, PieChartOutlined } from "@ant-design/icons";
-import { rbLogo } from "@assets/images";
+import { ewsTransparent } from "@assets/images";
 import { Button, Layout, Menu } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
 import Sider from "antd/es/layout/Sider";
@@ -37,8 +37,8 @@ const LandingLayout = () => {
         className=" bg-white h-full w-full overflow-auto border-r border-black/20 z-10"
       >
         <div className="flex flex-col  items-center">
-          <div className=" text-center h-40 w-40 rounded-2xl justify-center items-center flex my-8">
-            <img src={rbLogo} alt="logo" className="w-full" />
+          <div className=" text-center h-60 w-60 rounded-2xl justify-center items-center flex my-4">
+            <img src={ewsTransparent} alt="logo" className="w-full" />
           </div>
 
           {/* <Menu
