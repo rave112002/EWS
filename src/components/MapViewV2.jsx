@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-const MapView = () => {
+const MapViewV2 = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [is3D, setIs3D] = useState(true);
@@ -86,10 +86,7 @@ const MapView = () => {
       );
 
       // ✅ List of GeoJSON files
-      const geojsonFiles = [
-        "/data/fortBonifacio.geojson",
-        "/data/westernBicutan.geojson",
-      ];
+      const geojsonFiles = ["/data/taguig.geojson"];
 
       // Fetch all files
       const geojsons = await Promise.all(
@@ -169,56 +166,253 @@ const MapView = () => {
         data: combinedGeoJSON,
       });
 
-      // Fill layer with 3D extrusion
+      // Fill layer with 3D extrusion (different color per barangay)
       map.current.addLayer({
         id: "combined-fill-3d",
         type: "fill-extrusion",
         source: "combinedBoundaries",
         paint: {
-          "fill-extrusion-color": "#FF0000",
+          "fill-extrusion-color": [
+            "match",
+            ["get", "adm4_psgc"],
+            1381500001,
+            "hsl(0, 70%, 50%)",
+            1381500002,
+            "hsl(137.5, 70%, 50%)",
+            1381500003,
+            "hsl(275, 70%, 50%)",
+            1381500004,
+            "hsl(52.5, 70%, 50%)",
+            1381500005,
+            "hsl(190, 70%, 50%)",
+            1381500006,
+            "hsl(327.5, 70%, 50%)",
+            1381500007,
+            "hsl(105, 70%, 50%)",
+            1381500008,
+            "hsl(242.5, 70%, 50%)",
+            1381500009,
+            "hsl(20, 70%, 50%)",
+            1381500010,
+            "hsl(157.5, 70%, 50%)",
+            1381500011,
+            "hsl(295, 70%, 50%)",
+            1381500012,
+            "hsl(72.5, 70%, 50%)",
+            1381500013,
+            "hsl(210, 70%, 50%)",
+            1381500014,
+            "hsl(347.5, 70%, 50%)",
+            1381500015,
+            "hsl(125, 70%, 50%)",
+            1381500016,
+            "hsl(262.5, 70%, 50%)",
+            1381500017,
+            "hsl(40, 70%, 50%)",
+            1381500018,
+            "hsl(177.5, 70%, 50%)",
+            1381500019,
+            "hsl(315, 70%, 50%)",
+            1381500020,
+            "hsl(92.5, 70%, 50%)",
+            1381500021,
+            "hsl(230, 70%, 50%)",
+            1381500022,
+            "hsl(7.5, 70%, 50%)",
+            1381500023,
+            "hsl(145, 70%, 50%)",
+            1381500024,
+            "hsl(282.5, 70%, 50%)",
+            1381500025,
+            "hsl(60, 70%, 50%)",
+            1381500026,
+            "hsl(197.5, 70%, 50%)",
+            1381500027,
+            "hsl(335, 70%, 50%)",
+            1381500028,
+            "hsl(112.5, 70%, 50%)",
+            1381500029,
+            "hsl(250, 70%, 50%)",
+            1381500030,
+            "hsl(27.5, 70%, 50%)",
+            1381500031,
+            "hsl(165, 70%, 50%)",
+            1381500032,
+            "hsl(302.5, 70%, 50%)",
+            1381500033,
+            "hsl(80, 70%, 50%)",
+            1381500034,
+            "hsl(217.5, 70%, 50%)",
+            1381500035,
+            "hsl(355, 70%, 50%)",
+            1381500036,
+            "hsl(132.5, 70%, 50%)",
+            1381500037,
+            "hsl(270, 70%, 50%)",
+            1381500038,
+            "hsl(47.5, 70%, 50%)",
+            "#FF0000", // fallback
+          ],
           "fill-extrusion-opacity": 0.4,
           "fill-extrusion-height": 150, // Height in meters
           "fill-extrusion-base": 0,
         },
       });
 
-      // Border line layer
+      // Border line layer (matching colors)
       map.current.addLayer({
         id: "combined-border",
         type: "line",
         source: "combinedBoundaries",
         paint: {
-          "line-color": "#FF0000",
+          "line-color": [
+            "match",
+            ["get", "id"],
+            1381500001,
+            "hsl(0, 70%, 40%)",
+            1381500002,
+            "hsl(137.5, 70%, 40%)",
+            1381500003,
+            "hsl(275, 70%, 40%)",
+            1381500004,
+            "hsl(52.5, 70%, 40%)",
+            1381500005,
+            "hsl(190, 70%, 40%)",
+            1381500006,
+            "hsl(327.5, 70%, 40%)",
+            1381500007,
+            "hsl(105, 70%, 40%)",
+            1381500008,
+            "hsl(242.5, 70%, 40%)",
+            1381500009,
+            "hsl(20, 70%, 40%)",
+            1381500010,
+            "hsl(157.5, 70%, 40%)",
+            1381500011,
+            "hsl(295, 70%, 40%)",
+            1381500012,
+            "hsl(72.5, 70%, 40%)",
+            1381500013,
+            "hsl(210, 70%, 40%)",
+            1381500014,
+            "hsl(347.5, 70%, 40%)",
+            1381500015,
+            "hsl(125, 70%, 40%)",
+            1381500016,
+            "hsl(262.5, 70%, 40%)",
+            1381500017,
+            "hsl(40, 70%, 40%)",
+            1381500018,
+            "hsl(177.5, 70%, 40%)",
+            1381500019,
+            "hsl(315, 70%, 40%)",
+            1381500020,
+            "hsl(92.5, 70%, 40%)",
+            1381500021,
+            "hsl(230, 70%, 40%)",
+            1381500022,
+            "hsl(7.5, 70%, 40%)",
+            1381500023,
+            "hsl(145, 70%, 40%)",
+            1381500024,
+            "hsl(282.5, 70%, 40%)",
+            1381500025,
+            "hsl(60, 70%, 40%)",
+            1381500026,
+            "hsl(197.5, 70%, 40%)",
+            1381500027,
+            "hsl(335, 70%, 40%)",
+            1381500028,
+            "hsl(112.5, 70%, 40%)",
+            1381500029,
+            "hsl(250, 70%, 40%)",
+            1381500030,
+            "hsl(27.5, 70%, 40%)",
+            1381500031,
+            "hsl(165, 70%, 40%)",
+            1381500032,
+            "hsl(302.5, 70%, 40%)",
+            1381500033,
+            "hsl(80, 70%, 40%)",
+            1381500034,
+            "hsl(217.5, 70%, 40%)",
+            1381500035,
+            "hsl(355, 70%, 40%)",
+            1381500036,
+            "hsl(132.5, 70%, 40%)",
+            1381500037,
+            "hsl(270, 70%, 40%)",
+            1381500038,
+            "hsl(47.5, 70%, 40%)",
+            "#CC0000", // fallback
+          ],
           "line-width": 2.5,
         },
       });
 
-      // ✅ Add marker for each GeoJSON using official label points
-      geojsons.forEach((geojson, i) => {
+      // ✅ Generate colors for each barangay
+      const generateColor = (index) => {
+        const hue = (index * 137.5) % 360; // Golden angle for good distribution
+        return `hsl(${hue}, 70%, 50%)`;
+      };
+
+      // ✅ Calculate centroid and add markers for each barangay
+      geojsons.forEach((geojson) => {
         const features = geojson.features || [geojson];
 
-        features.forEach((feature) => {
-          // Only use Point features (official label positions)
-          if (feature.geometry.type === "Point") {
-            const [lon, lat] = feature.geometry.coordinates;
-            const name =
-              feature.properties?.name ||
-              geojsonFiles[i].split("/").pop().replace(".geojson", "");
+        features.forEach((feature, index) => {
+          if (
+            feature.geometry.type === "Polygon" ||
+            feature.geometry.type === "MultiPolygon"
+          ) {
+            // Calculate centroid
+            let coords = [];
+            if (feature.geometry.type === "Polygon") {
+              coords = feature.geometry.coordinates[0];
+            } else if (feature.geometry.type === "MultiPolygon") {
+              coords = feature.geometry.coordinates[0][0];
+            }
 
+            // Simple centroid calculation
+            let lonSum = 0,
+              latSum = 0;
+            coords.forEach(([lon, lat]) => {
+              lonSum += lon;
+              latSum += lat;
+            });
+            const centroidLon = lonSum / coords.length;
+            const centroidLat = latSum / coords.length;
+
+            const name = feature.properties?.adm4_en || `Barangay ${index + 1}`;
+            const color = generateColor(index);
+
+            // Create marker element
             const el = document.createElement("div");
             el.className = "marker";
-            el.style.width = "14px";
-            el.style.height = "14px";
-            el.style.backgroundColor = "#FF0000";
+            el.style.width = "16px";
+            el.style.height = "16px";
+            el.style.backgroundColor = color;
             el.style.borderRadius = "50%";
             el.style.border = "2px solid white";
             el.style.cursor = "pointer";
-            el.style.boxShadow = "0 0 5px rgba(0,0,0,0.3)";
+            el.style.boxShadow = "0 0 5px rgba(0,0,0,0.4)";
+            el.style.transition = "transform 0.2s";
 
-            const popup = new maplibregl.Popup({ offset: 25 }).setText(name);
+            el.onmouseenter = () => {
+              el.style.transform = "scale(1.3)";
+            };
+            el.onmouseleave = () => {
+              el.style.transform = "scale(1)";
+            };
+
+            const popup = new maplibregl.Popup({ offset: 25 }).setHTML(
+              `<strong>${name}</strong><br/>Area: ${
+                feature.properties?.area_km2 || "N/A"
+              } km²`
+            );
 
             new maplibregl.Marker(el)
-              .setLngLat([lon, lat])
+              .setLngLat([centroidLon, centroidLat])
               .setPopup(popup)
               .addTo(map.current);
           }
@@ -323,4 +517,4 @@ const MapView = () => {
   );
 };
 
-export default MapView;
+export default MapViewV2;
