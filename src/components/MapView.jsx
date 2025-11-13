@@ -10,9 +10,9 @@ const MapView = ({
   onMapLoad = () => {},
 
   // 3D options
-  enableTerrain = true,
+  enableTerrain = false,
   // MapTiler terrain-rgb tiles.json
-  terrainSourceUrl = "https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=EwtO1Ev8tHi9GJOuWxBy",
+  terrainSourceUrl = "", //https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=EwtO1Ev8tHi9GJOuWxBy
   terrainExaggeration = 1.0,
   enable3DBuildings = false,
 }) => {
@@ -63,9 +63,16 @@ const MapView = ({
     mapInstance.current.on("load", async () => {
       // ✅ List of GeoJSON files
       const geojsonFiles = [
-        "/data/fortBonifacio.geojson",
-        "/data/westernBicutan.geojson",
-        "/data/centralBicutan.geojson",
+        // "/data/fortBonifacio.geojson",
+        // "/data/westernBicutan.geojson",
+        // "/data/centralBicutan.geojson",
+        // "/data/upperBicutan.geojson",
+        // "/data/newLowerBicutan.geojson",
+        // "/data/bagumbayan.geojson",
+        // "/data/tuktukan.geojson",
+        // "/data/pinagsama.geojson",
+        // "/data/maharlika.geojson",
+        "/data/taguig.geojson",
       ];
 
       // Fetch all files
@@ -210,8 +217,8 @@ const MapView = ({
           });
         }
 
-        mapInstance.current.setPitch(70);
-        mapInstance.current.setBearing(-45);
+        mapInstance.current.setPitch(0);
+        mapInstance.current.setBearing(0);
         mapInstance.current.zoomTo(14, { duration: 1000 });
 
         // Tilt the camera so elevation is visible
