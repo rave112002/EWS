@@ -1,7 +1,7 @@
 // MapView.jsx
-import React, { useRef, useEffect } from 'react';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import React, { useRef, useEffect } from "react";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const MapView = ({
   center = [121.0, 14.6], // default to Metro Manila (lon, lat)
@@ -45,12 +45,14 @@ const MapView = ({
       container: mapContainer.current,
       style: styleUrl,
       center: center,
-      zoom: zoom
+      zoom: zoom,
     });
-    
 
     // add navigation controls (zoom + rotate)
-    mapInstance.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+    mapInstance.current.addControl(
+      new maplibregl.NavigationControl(),
+      "top-right"
+    );
 
     // Your existing onMapLoad callback
     mapInstance.current.on("load", () => {
@@ -274,12 +276,7 @@ const MapView = ({
     enable3DBuildings,
   ]);
 
-  return (
-    <div
-      ref={mapContainer}
-      style={{ width: '100%', height: '100%' }}
-    />
-  );
+  return <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />;
 };
 
 export default MapView;
