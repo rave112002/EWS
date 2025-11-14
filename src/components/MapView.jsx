@@ -1,7 +1,9 @@
 // MapView.jsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Button } from "antd";
+import { Mountain, MountainSnow } from "lucide-react";
 
 const MapView = ({
   center = [121.0, 14.6], // default to Metro Manila (lon, lat)
@@ -10,12 +12,20 @@ const MapView = ({
   onMapLoad = () => {},
 
   // 3D options
-  enableTerrain = false,
+
   // MapTiler terrain-rgb tiles.json
-  terrainSourceUrl = "", //https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=EwtO1Ev8tHi9GJOuWxBy
+
   terrainExaggeration = 1.0,
   enable3DBuildings = false,
 }) => {
+  const [terrainEnabled, setTerrainEnabled] = useState(false);
+
+  const terrainSourceUrl = terrainEnabled
+    ? "https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=EwtO1Ev8tHi9GJOuWxBy"
+    : "";
+
+  const enableTerrain = terrainEnabled;
+
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
 
@@ -200,12 +210,12 @@ const MapView = ({
       }
 
       // Terrain control (MapLibre 5+)
-      mapInstance.current.addControl(
-        new maplibregl.TerrainControl({
-          source: "terrain-dem",
-          exaggeration: terrainExaggeration,
-        })
-      );
+      // mapInstance.current.addControl(
+      //   new maplibregl.TerrainControl({
+      //     source: "terrain-dem",
+      //     exaggeration: terrainExaggeration,
+      //   })
+      // );
 
       // --- 3D TERRAIN (MapTiler) ---
       if (enableTerrain && terrainSourceUrl) {
@@ -301,7 +311,18 @@ const MapView = ({
     enable3DBuildings,
   ]);
 
-  return <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />;
+  return (
+    <>
+      <Button
+        style={{ position: "absolute", zIndex: 1 }}
+        onClick={() => setTerrainEnabled((prev) => !prev)}
+        className=" right-4 top-44 p-0 px-2"
+      >
+        {terrainEnabled ? <Mountain size={16} /> : <MountainSnow size={16} />}
+      </Button>
+      <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+    </>
+  );
 };
 
 export default MapView;
