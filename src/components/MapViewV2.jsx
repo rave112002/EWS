@@ -5,7 +5,11 @@ import "maplibre-gl/dist/maplibre-gl.css";
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const [is3D, setIs3D] = useState(true);
+  const [is3D, setIs3D] = useState(false);
+  const [selectedBarangay, setSelectedBarangay] = useState(null);
+  const [showElevation, setShowElevation] = useState(false);
+  const elevationCacheRef = useRef({});
+  const showElevationRef = useRef(false);
 
   const toggle2D3D = () => {
     if (!map.current) return;
@@ -29,6 +33,261 @@ const MapViewV2 = () => {
     }
   };
 
+  const resetSelection = () => {
+    if (!map.current) return;
+
+    setSelectedBarangay(null);
+
+    if (showElevation) {
+      // Reset to original elevation heights
+      const elevationCache = elevationCacheRef.current;
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        [
+          "match",
+          ["get", "adm4_psgc"],
+          ...Object.entries(elevationCache).flatMap(([psgc, elevation]) => [
+            parseInt(psgc),
+            elevation * 15,
+          ]),
+          150,
+        ]
+      );
+      // Enable colors
+      map.current.setPaintProperty("combined-fill-3d", "fill-extrusion-color", [
+        "interpolate",
+        ["linear"],
+        ["get", "adm4_psgc"],
+        1381500001,
+        "hsl(0, 70%, 50%)",
+        1381500002,
+        "hsl(137.5, 70%, 50%)",
+        1381500003,
+        "hsl(275, 70%, 50%)",
+        1381500004,
+        "hsl(52.5, 70%, 50%)",
+        1381500005,
+        "hsl(190, 70%, 50%)",
+        1381500006,
+        "hsl(327.5, 70%, 50%)",
+        1381500007,
+        "hsl(105, 70%, 50%)",
+        1381500008,
+        "hsl(242.5, 70%, 50%)",
+        1381500009,
+        "hsl(20, 70%, 50%)",
+        1381500010,
+        "hsl(157.5, 70%, 50%)",
+        1381500011,
+        "hsl(295, 70%, 50%)",
+        1381500012,
+        "hsl(72.5, 70%, 50%)",
+        1381500013,
+        "hsl(210, 70%, 50%)",
+        1381500014,
+        "hsl(347.5, 70%, 50%)",
+        1381500015,
+        "hsl(125, 70%, 50%)",
+        1381500016,
+        "hsl(262.5, 70%, 50%)",
+        1381500017,
+        "hsl(40, 70%, 50%)",
+        1381500018,
+        "hsl(177.5, 70%, 50%)",
+        1381500019,
+        "hsl(315, 70%, 50%)",
+        1381500020,
+        "hsl(92.5, 70%, 50%)",
+        1381500021,
+        "hsl(230, 70%, 50%)",
+        1381500022,
+        "hsl(7.5, 70%, 50%)",
+        1381500023,
+        "hsl(145, 70%, 50%)",
+        1381500024,
+        "hsl(282.5, 70%, 50%)",
+        1381500025,
+        "hsl(60, 70%, 50%)",
+        1381500026,
+        "hsl(197.5, 70%, 50%)",
+        1381500027,
+        "hsl(335, 70%, 50%)",
+        1381500028,
+        "hsl(112.5, 70%, 50%)",
+        1381500029,
+        "hsl(250, 70%, 50%)",
+        1381500030,
+        "hsl(27.5, 70%, 50%)",
+        1381500031,
+        "hsl(165, 70%, 50%)",
+        1381500032,
+        "hsl(302.5, 70%, 50%)",
+        1381500033,
+        "hsl(80, 70%, 50%)",
+        1381500034,
+        "hsl(217.5, 70%, 50%)",
+        1381500035,
+        "hsl(355, 70%, 50%)",
+        1381500036,
+        "hsl(132.5, 70%, 50%)",
+        1381500037,
+        "hsl(270, 70%, 50%)",
+        1381500038,
+        "hsl(47.5, 70%, 50%)",
+      ]);
+    } else {
+      // Reset to flat uniform height
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        150
+      );
+      // Set to dark red color
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#990F02"
+      );
+    }
+
+    // Reset opacity
+    map.current.setPaintProperty(
+      "combined-fill-3d",
+      "fill-extrusion-opacity",
+      0.5
+    );
+  };
+
+  const toggleElevation = () => {
+    if (!map.current) return;
+
+    const newShowElevation = !showElevation;
+    setShowElevation(newShowElevation);
+    showElevationRef.current = newShowElevation;
+    setSelectedBarangay(null); // Reset selection when toggling
+
+    if (newShowElevation) {
+      // Show elevation-based heights
+      const elevationCache = elevationCacheRef.current;
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        [
+          "match",
+          ["get", "adm4_psgc"],
+          ...Object.entries(elevationCache).flatMap(([psgc, elevation]) => [
+            parseInt(psgc),
+            elevation * 15,
+          ]),
+          150,
+        ]
+      );
+      // Enable colors
+      map.current.setPaintProperty("combined-fill-3d", "fill-extrusion-color", [
+        "interpolate",
+        ["linear"],
+        ["get", "adm4_psgc"],
+        1381500001,
+        "hsl(0, 70%, 50%)",
+        1381500002,
+        "hsl(137.5, 70%, 50%)",
+        1381500003,
+        "hsl(275, 70%, 50%)",
+        1381500004,
+        "hsl(52.5, 70%, 50%)",
+        1381500005,
+        "hsl(190, 70%, 50%)",
+        1381500006,
+        "hsl(327.5, 70%, 50%)",
+        1381500007,
+        "hsl(105, 70%, 50%)",
+        1381500008,
+        "hsl(242.5, 70%, 50%)",
+        1381500009,
+        "hsl(20, 70%, 50%)",
+        1381500010,
+        "hsl(157.5, 70%, 50%)",
+        1381500011,
+        "hsl(295, 70%, 50%)",
+        1381500012,
+        "hsl(72.5, 70%, 50%)",
+        1381500013,
+        "hsl(210, 70%, 50%)",
+        1381500014,
+        "hsl(347.5, 70%, 50%)",
+        1381500015,
+        "hsl(125, 70%, 50%)",
+        1381500016,
+        "hsl(262.5, 70%, 50%)",
+        1381500017,
+        "hsl(40, 70%, 50%)",
+        1381500018,
+        "hsl(177.5, 70%, 50%)",
+        1381500019,
+        "hsl(315, 70%, 50%)",
+        1381500020,
+        "hsl(92.5, 70%, 50%)",
+        1381500021,
+        "hsl(230, 70%, 50%)",
+        1381500022,
+        "hsl(7.5, 70%, 50%)",
+        1381500023,
+        "hsl(145, 70%, 50%)",
+        1381500024,
+        "hsl(282.5, 70%, 50%)",
+        1381500025,
+        "hsl(60, 70%, 50%)",
+        1381500026,
+        "hsl(197.5, 70%, 50%)",
+        1381500027,
+        "hsl(335, 70%, 50%)",
+        1381500028,
+        "hsl(112.5, 70%, 50%)",
+        1381500029,
+        "hsl(250, 70%, 50%)",
+        1381500030,
+        "hsl(27.5, 70%, 50%)",
+        1381500031,
+        "hsl(165, 70%, 50%)",
+        1381500032,
+        "hsl(302.5, 70%, 50%)",
+        1381500033,
+        "hsl(80, 70%, 50%)",
+        1381500034,
+        "hsl(217.5, 70%, 50%)",
+        1381500035,
+        "hsl(355, 70%, 50%)",
+        1381500036,
+        "hsl(132.5, 70%, 50%)",
+        1381500037,
+        "hsl(270, 70%, 50%)",
+        1381500038,
+        "hsl(47.5, 70%, 50%)",
+      ]);
+    } else {
+      // Show uniform flat height
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        150
+      );
+      // Set to dark red color
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#990F02"
+      );
+    }
+
+    // Reset opacity
+    map.current.setPaintProperty(
+      "combined-fill-3d",
+      "fill-extrusion-opacity",
+      0.5
+    );
+  };
+
   useEffect(() => {
     if (map.current) return;
 
@@ -38,19 +297,17 @@ const MapViewV2 = () => {
         "https://api.jawg.io/styles/4300a91b-b03a-451a-b7ce-f02640d7d30a.json?access-token=dyAlxp8V4w8FBKBi4Sbus1xMvIg6ojhrGV2mcZu0NacG33dYSdUP4aYMF9rSZS83",
       zoom: 14.5,
       center: [121.0527, 14.5176],
-      pitch: 60, // Tilt the map (0-85 degrees)
-      bearing: -17.6, // Rotate the map
-      antialias: true, // Enable smooth 3D rendering
+      pitch: 0,
+      bearing: 0,
+      antialias: true,
     });
 
     map.current.on("load", async () => {
-      // Add 3D buildings layer
       const layers = map.current.getStyle().layers;
       const labelLayerId = layers.find(
         (layer) => layer.type === "symbol" && layer.layout["text-field"]
       )?.id;
 
-      // Add 3D building extrusions
       map.current.addLayer(
         {
           id: "3d-buildings",
@@ -85,10 +342,8 @@ const MapViewV2 = () => {
         labelLayerId
       );
 
-      // ✅ List of GeoJSON files
       const geojsonFiles = ["/data/taguig.geojson"];
 
-      // Fetch all files
       const geojsons = await Promise.all(
         geojsonFiles.map(async (url) => {
           const response = await fetch(url);
@@ -96,13 +351,11 @@ const MapViewV2 = () => {
         })
       );
 
-      // ✅ Combine all features into one FeatureCollection
       const combinedGeoJSON = {
         type: "FeatureCollection",
         features: geojsons.flatMap((g) => g.features || [g]),
       };
 
-      // ✅ Add Philippine Area of Responsibility (PAR) polygon
       const parGeoJSON = {
         type: "FeatureCollection",
         features: [
@@ -129,30 +382,27 @@ const MapViewV2 = () => {
         ],
       };
 
-      // Add PAR source
       map.current.addSource("parBoundary", {
         type: "geojson",
         data: parGeoJSON,
       });
 
-      // Add PAR fill layer (only visible when zoomed out)
       map.current.addLayer({
         id: "par-fill",
         type: "fill",
         source: "parBoundary",
-        maxzoom: 8, // Only show when zoom level is below 8
+        maxzoom: 8,
         paint: {
           "fill-color": "#0066FF",
           "fill-opacity": 0.15,
         },
       });
 
-      // Add PAR border layer (only visible when zoomed out)
       map.current.addLayer({
         id: "par-border",
         type: "line",
         source: "parBoundary",
-        maxzoom: 8, // Only show when zoom level is below 8
+        maxzoom: 8,
         paint: {
           "line-color": "#0066FF",
           "line-width": 2,
@@ -160,106 +410,254 @@ const MapViewV2 = () => {
         },
       });
 
-      // Add as a map source
       map.current.addSource("combinedBoundaries", {
         type: "geojson",
         data: combinedGeoJSON,
       });
 
-      // Fill layer with 3D extrusion (different color per barangay)
+      const elevationCache = {};
+
+      const fetchAllElevations = async () => {
+        const promises = combinedGeoJSON.features.map(async (feature) => {
+          let coords = [];
+          if (feature.geometry.type === "Polygon") {
+            coords = feature.geometry.coordinates[0];
+          } else if (feature.geometry.type === "MultiPolygon") {
+            coords = feature.geometry.coordinates[0][0];
+          }
+
+          let lonSum = 0,
+            latSum = 0;
+          coords.forEach(([lon, lat]) => {
+            lonSum += lon;
+            latSum += lat;
+          });
+          const centroidLon = lonSum / coords.length;
+          const centroidLat = latSum / coords.length;
+
+          try {
+            const response = await fetch(
+              `https://api.open-elevation.com/api/v1/lookup?locations=${centroidLat},${centroidLon}`
+            );
+            const data = await response.json();
+            const elevation = data.results[0]?.elevation || 10;
+            elevationCache[feature.properties.adm4_psgc] = elevation;
+          } catch (error) {
+            console.error("Error fetching elevation:", error);
+            elevationCache[feature.properties.adm4_psgc] = 10;
+          }
+        });
+
+        await Promise.all(promises);
+      };
+
+      await fetchAllElevations();
+
+      elevationCacheRef.current = elevationCache;
+
       map.current.addLayer({
         id: "combined-fill-3d",
         type: "fill-extrusion",
         source: "combinedBoundaries",
         paint: {
-          "fill-extrusion-color": [
-            "match",
-            ["get", "adm4_psgc"],
-            1381500001,
-            "hsl(0, 70%, 50%)",
-            1381500002,
-            "hsl(137.5, 70%, 50%)",
-            1381500003,
-            "hsl(275, 70%, 50%)",
-            1381500004,
-            "hsl(52.5, 70%, 50%)",
-            1381500005,
-            "hsl(190, 70%, 50%)",
-            1381500006,
-            "hsl(327.5, 70%, 50%)",
-            1381500007,
-            "hsl(105, 70%, 50%)",
-            1381500008,
-            "hsl(242.5, 70%, 50%)",
-            1381500009,
-            "hsl(20, 70%, 50%)",
-            1381500010,
-            "hsl(157.5, 70%, 50%)",
-            1381500011,
-            "hsl(295, 70%, 50%)",
-            1381500012,
-            "hsl(72.5, 70%, 50%)",
-            1381500013,
-            "hsl(210, 70%, 50%)",
-            1381500014,
-            "hsl(347.5, 70%, 50%)",
-            1381500015,
-            "hsl(125, 70%, 50%)",
-            1381500016,
-            "hsl(262.5, 70%, 50%)",
-            1381500017,
-            "hsl(40, 70%, 50%)",
-            1381500018,
-            "hsl(177.5, 70%, 50%)",
-            1381500019,
-            "hsl(315, 70%, 50%)",
-            1381500020,
-            "hsl(92.5, 70%, 50%)",
-            1381500021,
-            "hsl(230, 70%, 50%)",
-            1381500022,
-            "hsl(7.5, 70%, 50%)",
-            1381500023,
-            "hsl(145, 70%, 50%)",
-            1381500024,
-            "hsl(282.5, 70%, 50%)",
-            1381500025,
-            "hsl(60, 70%, 50%)",
-            1381500026,
-            "hsl(197.5, 70%, 50%)",
-            1381500027,
-            "hsl(335, 70%, 50%)",
-            1381500028,
-            "hsl(112.5, 70%, 50%)",
-            1381500029,
-            "hsl(250, 70%, 50%)",
-            1381500030,
-            "hsl(27.5, 70%, 50%)",
-            1381500031,
-            "hsl(165, 70%, 50%)",
-            1381500032,
-            "hsl(302.5, 70%, 50%)",
-            1381500033,
-            "hsl(80, 70%, 50%)",
-            1381500034,
-            "hsl(217.5, 70%, 50%)",
-            1381500035,
-            "hsl(355, 70%, 50%)",
-            1381500036,
-            "hsl(132.5, 70%, 50%)",
-            1381500037,
-            "hsl(270, 70%, 50%)",
-            1381500038,
-            "hsl(47.5, 70%, 50%)",
-            "#FF0000", // fallback
-          ],
-          "fill-extrusion-opacity": 0.4,
-          "fill-extrusion-height": 150, // Height in meters
+          "fill-extrusion-color": "#990F02",
+          "fill-extrusion-opacity": 0.5,
+          "fill-extrusion-height": 150,
           "fill-extrusion-base": 0,
         },
       });
 
-      // Border line layer (matching colors)
+      map.current.on("click", "combined-fill-3d", (e) => {
+        if (e.features.length > 0) {
+          const clickedFeature = e.features[0];
+          const clickedPsgc = clickedFeature.properties.adm4_psgc;
+
+          // Find the clicked feature in combinedGeoJSON
+          const fullFeature = combinedGeoJSON.features.find(
+            (f) => f.properties.adm4_psgc === clickedPsgc
+          );
+
+          if (!fullFeature) return;
+
+          setSelectedBarangay(clickedPsgc);
+
+          // Calculate centroid from the full feature
+          let coords = [];
+          if (fullFeature.geometry.type === "Polygon") {
+            coords = fullFeature.geometry.coordinates[0];
+          } else if (fullFeature.geometry.type === "MultiPolygon") {
+            coords = fullFeature.geometry.coordinates[0][0];
+          }
+
+          let centerLon = 0,
+            centerLat = 0;
+          coords.forEach(([lon, lat]) => {
+            centerLon += lon;
+            centerLat += lat;
+          });
+          centerLon /= coords.length;
+          centerLat /= coords.length;
+
+          // Use ref to get current elevation state
+          const isElevationOn = showElevationRef.current;
+
+          console.log("Clicked barangay:", clickedPsgc);
+          console.log("Elevation ON:", isElevationOn);
+          console.log("Center:", centerLon, centerLat);
+
+          if (isElevationOn) {
+            console.log("Zooming to barangay...");
+            map.current.easeTo({
+              center: [centerLon, centerLat],
+              zoom: 14,
+              pitch: 60,
+              bearing: -17.6,
+              duration: 1500,
+            });
+            setIs3D(true);
+          }
+
+          // Update color based on selection
+          if (isElevationOn) {
+            // When elevation is ON, keep the colorful scheme but highlight selected
+            map.current.setPaintProperty(
+              "combined-fill-3d",
+              "fill-extrusion-color",
+              [
+                "case",
+                ["==", ["get", "adm4_psgc"], clickedPsgc],
+                // Bright red for selected
+                [
+                  "interpolate",
+                  ["linear"],
+                  ["get", "adm4_psgc"],
+                  1381500001,
+                  "hsl(0, 70%, 50%)",
+                  1381500002,
+                  "hsl(137.5, 70%, 50%)",
+                  1381500003,
+                  "hsl(275, 70%, 50%)",
+                  1381500004,
+                  "hsl(52.5, 70%, 50%)",
+                  1381500005,
+                  "hsl(190, 70%, 50%)",
+                  1381500006,
+                  "hsl(327.5, 70%, 50%)",
+                  1381500007,
+                  "hsl(105, 70%, 50%)",
+                  1381500008,
+                  "hsl(242.5, 70%, 50%)",
+                  1381500009,
+                  "hsl(20, 70%, 50%)",
+                  1381500010,
+                  "hsl(157.5, 70%, 50%)",
+                  1381500011,
+                  "hsl(295, 70%, 50%)",
+                  1381500012,
+                  "hsl(72.5, 70%, 50%)",
+                  1381500013,
+                  "hsl(210, 70%, 50%)",
+                  1381500014,
+                  "hsl(347.5, 70%, 50%)",
+                  1381500015,
+                  "hsl(125, 70%, 50%)",
+                  1381500016,
+                  "hsl(262.5, 70%, 50%)",
+                  1381500017,
+                  "hsl(40, 70%, 50%)",
+                  1381500018,
+                  "hsl(177.5, 70%, 50%)",
+                  1381500019,
+                  "hsl(315, 70%, 50%)",
+                  1381500020,
+                  "hsl(92.5, 70%, 50%)",
+                  1381500021,
+                  "hsl(230, 70%, 50%)",
+                  1381500022,
+                  "hsl(7.5, 70%, 50%)",
+                  1381500023,
+                  "hsl(145, 70%, 50%)",
+                  1381500024,
+                  "hsl(282.5, 70%, 50%)",
+                  1381500025,
+                  "hsl(60, 70%, 50%)",
+                  1381500026,
+                  "hsl(197.5, 70%, 50%)",
+                  1381500027,
+                  "hsl(335, 70%, 50%)",
+                  1381500028,
+                  "hsl(112.5, 70%, 50%)",
+                  1381500029,
+                  "hsl(250, 70%, 50%)",
+                  1381500030,
+                  "hsl(27.5, 70%, 50%)",
+                  1381500031,
+                  "hsl(165, 70%, 50%)",
+                  1381500032,
+                  "hsl(302.5, 70%, 50%)",
+                  1381500033,
+                  "hsl(80, 70%, 50%)",
+                  1381500034,
+                  "hsl(217.5, 70%, 50%)",
+                  1381500035,
+                  "hsl(355, 70%, 50%)",
+                  1381500036,
+                  "hsl(132.5, 70%, 50%)",
+                  1381500037,
+                  "hsl(270, 70%, 50%)",
+                  1381500038,
+                  "hsl(47.5, 70%, 50%)",
+                ],
+              ]
+            );
+          } else {
+            // When elevation is OFF, change from dark red to bright red for selected
+            map.current.setPaintProperty(
+              "combined-fill-3d",
+              "fill-extrusion-color",
+              [
+                "case",
+                ["==", ["get", "adm4_psgc"], clickedPsgc],
+                "#22577A", // Bright red for selected
+                "#990F02", // Dark red for others
+              ]
+            );
+          }
+
+          map.current.setPaintProperty(
+            "combined-fill-3d",
+            "fill-extrusion-height",
+            [
+              "case",
+              ["==", ["get", "adm4_psgc"], clickedPsgc],
+              [
+                "match",
+                ["get", "adm4_psgc"],
+                ...Object.entries(elevationCache).flatMap(
+                  ([psgc, elevation]) => [parseInt(psgc), elevation * 50]
+                ),
+                500,
+              ],
+              0,
+            ]
+          );
+
+          map.current.setPaintProperty(
+            "combined-fill-3d",
+            "fill-extrusion-opacity",
+            ["case", ["==", ["get", "adm4_psgc"], clickedPsgc], 0.8, 0.2]
+          );
+        }
+      });
+
+      map.current.on("mouseenter", "combined-fill-3d", () => {
+        map.current.getCanvas().style.cursor = "pointer";
+      });
+
+      map.current.on("mouseleave", "combined-fill-3d", () => {
+        map.current.getCanvas().style.cursor = "";
+      });
+
       map.current.addLayer({
         id: "combined-border",
         type: "line",
@@ -344,19 +742,12 @@ const MapViewV2 = () => {
             "hsl(270, 70%, 40%)",
             1381500038,
             "hsl(47.5, 70%, 40%)",
-            "#CC0000", // fallback
+            "#FFFFFF",
           ],
           "line-width": 2.5,
         },
       });
 
-      // ✅ Generate colors for each barangay
-      const generateColor = (index) => {
-        const hue = (index * 137.5) % 360; // Golden angle for good distribution
-        return `hsl(${hue}, 70%, 50%)`;
-      };
-
-      // ✅ Calculate centroid and add markers for each barangay
       geojsons.forEach((geojson) => {
         const features = geojson.features || [geojson];
 
@@ -365,7 +756,6 @@ const MapViewV2 = () => {
             feature.geometry.type === "Polygon" ||
             feature.geometry.type === "MultiPolygon"
           ) {
-            // Calculate centroid
             let coords = [];
             if (feature.geometry.type === "Polygon") {
               coords = feature.geometry.coordinates[0];
@@ -373,53 +763,99 @@ const MapViewV2 = () => {
               coords = feature.geometry.coordinates[0][0];
             }
 
-            // Simple centroid calculation
-            let lonSum = 0,
-              latSum = 0;
-            coords.forEach(([lon, lat]) => {
-              lonSum += lon;
-              latSum += lat;
-            });
-            const centroidLon = lonSum / coords.length;
-            const centroidLat = latSum / coords.length;
+            const isPointInPolygon = (point, polygon) => {
+              let inside = false;
+              for (
+                let i = 0, j = polygon.length - 1;
+                i < polygon.length;
+                j = i++
+              ) {
+                const xi = polygon[i][0],
+                  yi = polygon[i][1];
+                const xj = polygon[j][0],
+                  yj = polygon[j][1];
+                const intersect =
+                  yi > point[1] !== yj > point[1] &&
+                  point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
+                if (intersect) inside = !inside;
+              }
+              return inside;
+            };
+
+            let area = 0;
+            let centroidLon = 0;
+            let centroidLat = 0;
+
+            for (let i = 0; i < coords.length - 1; i++) {
+              const [x0, y0] = coords[i];
+              const [x1, y1] = coords[i + 1];
+              const a = x0 * y1 - x1 * y0;
+              area += a;
+              centroidLon += (x0 + x1) * a;
+              centroidLat += (y0 + y1) * a;
+            }
+
+            area *= 0.5;
+            centroidLon /= 6 * area;
+            centroidLat /= 6 * area;
+
+            if (!isPointInPolygon([centroidLon, centroidLat], coords)) {
+              let minLon = Infinity,
+                maxLon = -Infinity;
+              let minLat = Infinity,
+                maxLat = -Infinity;
+
+              coords.forEach(([lon, lat]) => {
+                minLon = Math.min(minLon, lon);
+                maxLon = Math.max(maxLon, lon);
+                minLat = Math.min(minLat, lat);
+                maxLat = Math.max(maxLat, lat);
+              });
+
+              centroidLon = (minLon + maxLon) / 2;
+              centroidLat = (minLat + maxLat) / 2;
+            }
 
             const name = feature.properties?.adm4_en || `Barangay ${index + 1}`;
-            const color = generateColor(index);
 
-            // Create marker element
-            const el = document.createElement("div");
-            el.className = "marker";
-            el.style.width = "16px";
-            el.style.height = "16px";
-            el.style.backgroundColor = color;
-            el.style.borderRadius = "50%";
-            el.style.border = "2px solid white";
-            el.style.cursor = "pointer";
-            el.style.boxShadow = "0 0 5px rgba(0,0,0,0.4)";
-            el.style.transition = "transform 0.2s";
+            const labelSourceId = `label-${
+              feature.properties?.adm4_psgc || index
+            }`;
+            map.current.addSource(labelSourceId, {
+              type: "geojson",
+              data: {
+                type: "Feature",
+                geometry: {
+                  type: "Point",
+                  coordinates: [centroidLon, centroidLat],
+                },
+                properties: {
+                  name: name,
+                },
+              },
+            });
 
-            el.onmouseenter = () => {
-              el.style.transform = "scale(1.3)";
-            };
-            el.onmouseleave = () => {
-              el.style.transform = "scale(1)";
-            };
-
-            const popup = new maplibregl.Popup({ offset: 25 }).setHTML(
-              `<strong>${name}</strong><br/>Area: ${
-                feature.properties?.area_km2 || "N/A"
-              } km²`
-            );
-
-            new maplibregl.Marker(el)
-              .setLngLat([centroidLon, centroidLat])
-              .setPopup(popup)
-              .addTo(map.current);
+            map.current.addLayer({
+              id: `label-layer-${feature.properties?.adm4_psgc || index}`,
+              type: "symbol",
+              source: labelSourceId,
+              layout: {
+                "text-field": ["get", "name"],
+                "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+                "text-size": 12,
+                "text-offset": [0, 0],
+                "text-anchor": "center",
+              },
+              paint: {
+                "text-color": "#000000",
+                "text-halo-color": "#FFFFFF",
+                "text-halo-width": 2,
+              },
+            });
           }
         });
       });
 
-      // ✅ Auto zoom to show all features
       const bounds = new maplibregl.LngLatBounds();
       combinedGeoJSON.features.forEach((f) => {
         if (f.geometry.type === "Polygon") {
@@ -436,13 +872,12 @@ const MapViewV2 = () => {
       if (!bounds.isEmpty()) {
         map.current.fitBounds(bounds, {
           padding: 40,
-          pitch: 60,
-          bearing: -17.6,
+          pitch: 0,
+          bearing: 0,
         });
       }
     });
 
-    // Add navigation controls (zoom, rotation, pitch)
     map.current.addControl(
       new maplibregl.NavigationControl({
         visualizePitch: true,
@@ -452,15 +887,12 @@ const MapViewV2 = () => {
       "top-right"
     );
 
-    // Enable map rotation with right-click + drag
     map.current.dragRotate.enable();
-    // Enable pitch with Ctrl + drag
     map.current.touchZoomRotate.enableRotation();
-  }, []);
+  }, [showElevation]);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "88vh" }}>
-      {/* 2D/3D Toggle Buttons */}
       <div
         style={{
           position: "absolute",
@@ -507,6 +939,40 @@ const MapViewV2 = () => {
         >
           3D
         </button>
+        <button
+          onClick={toggleElevation}
+          style={{
+            padding: "10px 20px",
+            border: "none",
+            borderRadius: "6px",
+            backgroundColor: showElevation ? "#2196F3" : "#f0f0f0",
+            color: showElevation ? "white" : "#333",
+            fontWeight: "600",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            fontSize: "14px",
+          }}
+        >
+          {showElevation ? "Elevation ON" : "Elevation OFF"}
+        </button>
+        {selectedBarangay && (
+          <button
+            onClick={resetSelection}
+            style={{
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "6px",
+              backgroundColor: "#4CAF50",
+              color: "white",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              fontSize: "14px",
+            }}
+          >
+            Reset
+          </button>
+        )}
       </div>
 
       <div
