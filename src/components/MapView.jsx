@@ -112,8 +112,26 @@ const MapView = ({
         type: "line",
         source: "combinedBoundaries",
         paint: {
-          "line-color": "#FF0000",
+          "line-color": "#fff",
           "line-width": 2.5,
+        },
+      });
+
+      mapInstance.current.addLayer({
+        id: "combined-labels",
+        type: "symbol",
+        source: "combinedBoundaries",
+        layout: {
+          "text-field": ["get", "adm4_en"], // MapLibre GL expression syntax
+          "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+          "text-size": 14,
+          "text-anchor": "center",
+          "text-allow-overlap": false, // Optional: allows labels to overlap
+        },
+        paint: {
+          "text-color": "#333333",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 2,
         },
       });
 
