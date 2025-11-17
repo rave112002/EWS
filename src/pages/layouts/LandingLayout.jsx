@@ -18,6 +18,11 @@ const LandingLayout = () => {
       icon: <GlobalOutlined />,
       label: <Link to={"/map"}>Map</Link>,
     },
+    {
+      key: "3",
+      icon: <GlobalOutlined />,
+      label: <Link to={"/mapv2"}>Mapv2</Link>,
+    },
     // {
     //   key: "sub1",
     //   label: "Navigation One",
