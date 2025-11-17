@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { WEATHER_CODES } from "../constants/weatherCode";
+import { BARANGAY_COLORS } from "../constants/mapColors";
 
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
@@ -8,6 +10,9 @@ const MapViewV2 = () => {
   const [is3D, setIs3D] = useState(false);
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [showElevation, setShowElevation] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [weatherData, setWeatherData] = useState(null);
+  const [loadingWeather, setLoadingWeather] = useState(false);
   const elevationCacheRef = useRef({});
   const showElevationRef = useRef(false);
 
@@ -37,6 +42,8 @@ const MapViewV2 = () => {
     if (!map.current) return;
 
     setSelectedBarangay(null);
+    setShowModal(false);
+    setWeatherData(null);
 
     if (showElevation) {
       // Reset to original elevation heights
@@ -56,85 +63,13 @@ const MapViewV2 = () => {
       );
       // Enable colors
       map.current.setPaintProperty("combined-fill-3d", "fill-extrusion-color", [
-        "interpolate",
-        ["linear"],
+        "match",
         ["get", "adm4_psgc"],
-        1381500001,
-        "hsl(0, 70%, 50%)",
-        1381500002,
-        "hsl(137.5, 70%, 50%)",
-        1381500003,
-        "hsl(275, 70%, 50%)",
-        1381500004,
-        "hsl(52.5, 70%, 50%)",
-        1381500005,
-        "hsl(190, 70%, 50%)",
-        1381500006,
-        "hsl(327.5, 70%, 50%)",
-        1381500007,
-        "hsl(105, 70%, 50%)",
-        1381500008,
-        "hsl(242.5, 70%, 50%)",
-        1381500009,
-        "hsl(20, 70%, 50%)",
-        1381500010,
-        "hsl(157.5, 70%, 50%)",
-        1381500011,
-        "hsl(295, 70%, 50%)",
-        1381500012,
-        "hsl(72.5, 70%, 50%)",
-        1381500013,
-        "hsl(210, 70%, 50%)",
-        1381500014,
-        "hsl(347.5, 70%, 50%)",
-        1381500015,
-        "hsl(125, 70%, 50%)",
-        1381500016,
-        "hsl(262.5, 70%, 50%)",
-        1381500017,
-        "hsl(40, 70%, 50%)",
-        1381500018,
-        "hsl(177.5, 70%, 50%)",
-        1381500019,
-        "hsl(315, 70%, 50%)",
-        1381500020,
-        "hsl(92.5, 70%, 50%)",
-        1381500021,
-        "hsl(230, 70%, 50%)",
-        1381500022,
-        "hsl(7.5, 70%, 50%)",
-        1381500023,
-        "hsl(145, 70%, 50%)",
-        1381500024,
-        "hsl(282.5, 70%, 50%)",
-        1381500025,
-        "hsl(60, 70%, 50%)",
-        1381500026,
-        "hsl(197.5, 70%, 50%)",
-        1381500027,
-        "hsl(335, 70%, 50%)",
-        1381500028,
-        "hsl(112.5, 70%, 50%)",
-        1381500029,
-        "hsl(250, 70%, 50%)",
-        1381500030,
-        "hsl(27.5, 70%, 50%)",
-        1381500031,
-        "hsl(165, 70%, 50%)",
-        1381500032,
-        "hsl(302.5, 70%, 50%)",
-        1381500033,
-        "hsl(80, 70%, 50%)",
-        1381500034,
-        "hsl(217.5, 70%, 50%)",
-        1381500035,
-        "hsl(355, 70%, 50%)",
-        1381500036,
-        "hsl(132.5, 70%, 50%)",
-        1381500037,
-        "hsl(270, 70%, 50%)",
-        1381500038,
-        "hsl(47.5, 70%, 50%)",
+        ...Object.entries(BARANGAY_COLORS).flatMap(([psgc, color]) => [
+          parseInt(psgc),
+          color,
+        ]),
+        "#990F02", // default color
       ]);
     } else {
       // Reset to flat uniform height
@@ -166,6 +101,7 @@ const MapViewV2 = () => {
     setShowElevation(newShowElevation);
     showElevationRef.current = newShowElevation;
     setSelectedBarangay(null); // Reset selection when toggling
+    setShowModal(false);
 
     if (newShowElevation) {
       // Show elevation-based heights
@@ -185,85 +121,13 @@ const MapViewV2 = () => {
       );
       // Enable colors
       map.current.setPaintProperty("combined-fill-3d", "fill-extrusion-color", [
-        "interpolate",
-        ["linear"],
+        "match",
         ["get", "adm4_psgc"],
-        1381500001,
-        "hsl(0, 70%, 50%)",
-        1381500002,
-        "hsl(137.5, 70%, 50%)",
-        1381500003,
-        "hsl(275, 70%, 50%)",
-        1381500004,
-        "hsl(52.5, 70%, 50%)",
-        1381500005,
-        "hsl(190, 70%, 50%)",
-        1381500006,
-        "hsl(327.5, 70%, 50%)",
-        1381500007,
-        "hsl(105, 70%, 50%)",
-        1381500008,
-        "hsl(242.5, 70%, 50%)",
-        1381500009,
-        "hsl(20, 70%, 50%)",
-        1381500010,
-        "hsl(157.5, 70%, 50%)",
-        1381500011,
-        "hsl(295, 70%, 50%)",
-        1381500012,
-        "hsl(72.5, 70%, 50%)",
-        1381500013,
-        "hsl(210, 70%, 50%)",
-        1381500014,
-        "hsl(347.5, 70%, 50%)",
-        1381500015,
-        "hsl(125, 70%, 50%)",
-        1381500016,
-        "hsl(262.5, 70%, 50%)",
-        1381500017,
-        "hsl(40, 70%, 50%)",
-        1381500018,
-        "hsl(177.5, 70%, 50%)",
-        1381500019,
-        "hsl(315, 70%, 50%)",
-        1381500020,
-        "hsl(92.5, 70%, 50%)",
-        1381500021,
-        "hsl(230, 70%, 50%)",
-        1381500022,
-        "hsl(7.5, 70%, 50%)",
-        1381500023,
-        "hsl(145, 70%, 50%)",
-        1381500024,
-        "hsl(282.5, 70%, 50%)",
-        1381500025,
-        "hsl(60, 70%, 50%)",
-        1381500026,
-        "hsl(197.5, 70%, 50%)",
-        1381500027,
-        "hsl(335, 70%, 50%)",
-        1381500028,
-        "hsl(112.5, 70%, 50%)",
-        1381500029,
-        "hsl(250, 70%, 50%)",
-        1381500030,
-        "hsl(27.5, 70%, 50%)",
-        1381500031,
-        "hsl(165, 70%, 50%)",
-        1381500032,
-        "hsl(302.5, 70%, 50%)",
-        1381500033,
-        "hsl(80, 70%, 50%)",
-        1381500034,
-        "hsl(217.5, 70%, 50%)",
-        1381500035,
-        "hsl(355, 70%, 50%)",
-        1381500036,
-        "hsl(132.5, 70%, 50%)",
-        1381500037,
-        "hsl(270, 70%, 50%)",
-        1381500038,
-        "hsl(47.5, 70%, 50%)",
+        ...Object.entries(BARANGAY_COLORS).flatMap(([psgc, color]) => [
+          parseInt(psgc),
+          color,
+        ]),
+        "#990F02", // default color
       ]);
     } else {
       // Show uniform flat height
@@ -286,6 +150,42 @@ const MapViewV2 = () => {
       "fill-extrusion-opacity",
       0.5
     );
+  };
+
+  const fetchWeatherData = async (lat, lon, barangayName, psgc) => {
+    setLoadingWeather(true);
+    try {
+      // Using Open-Meteo API (free, no API key needed)
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia/Manila`
+      );
+      const data = await response.json();
+
+      // Get elevation from cache
+      const elevation = elevationCacheRef.current[psgc] || 0;
+
+      setWeatherData({
+        barangay: barangayName,
+        temperature: data.current.temperature_2m,
+        humidity: data.current.relative_humidity_2m,
+        precipitation: data.current.precipitation,
+        windSpeed: data.current.wind_speed_10m,
+        weatherCode: data.current.weather_code,
+        elevation: elevation,
+      });
+    } catch (error) {
+      console.error("Error fetching weather:", error);
+      setWeatherData({
+        barangay: barangayName,
+        error: "Unable to fetch weather data",
+      });
+    } finally {
+      setLoadingWeather(false);
+    }
+  };
+
+  const getWeatherDescription = (code) => {
+    return WEATHER_CODES[code] || "Unknown";
   };
 
   useEffect(() => {
@@ -467,10 +367,37 @@ const MapViewV2 = () => {
         },
       });
 
+      // ADD BARANGAY LABELS
+      map.current.addLayer({
+        id: "barangay-labels",
+        type: "symbol",
+        source: "combinedBoundaries",
+        minzoom: 10, // optional: show earlier if you want
+
+        layout: {
+          "text-field": ["get", "adm4_en"],
+          "text-font": ["Open Sans Regular"],
+          "text-size": 12,
+          "text-offset": [0, 0],
+          "text-anchor": "center",
+
+          // 👇 VERY IMPORTANT
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+        },
+
+        paint: {
+          "text-color": "#ffffff",
+          "text-halo-color": "#000000",
+          "text-halo-width": 2,
+        },
+      });
+
       map.current.on("click", "combined-fill-3d", (e) => {
         if (e.features.length > 0) {
           const clickedFeature = e.features[0];
           const clickedPsgc = clickedFeature.properties.adm4_psgc;
+          const barangayName = clickedFeature.properties.adm4_en || "Unknown";
 
           // Find the clicked feature in combinedGeoJSON
           const fullFeature = combinedGeoJSON.features.find(
@@ -501,12 +428,11 @@ const MapViewV2 = () => {
           // Use ref to get current elevation state
           const isElevationOn = showElevationRef.current;
 
-          console.log("Clicked barangay:", clickedPsgc);
-          console.log("Elevation ON:", isElevationOn);
-          console.log("Center:", centerLon, centerLat);
+          // Fetch weather data and show modal
+          fetchWeatherData(centerLat, centerLon, barangayName, clickedPsgc);
+          setShowModal(true);
 
           if (isElevationOn) {
-            console.log("Zooming to barangay...");
             map.current.easeTo({
               center: [centerLon, centerLat],
               zoom: 14,
@@ -528,85 +454,12 @@ const MapViewV2 = () => {
                 ["==", ["get", "adm4_psgc"], clickedPsgc],
                 // Bright red for selected
                 [
-                  "interpolate",
-                  ["linear"],
+                  "match",
                   ["get", "adm4_psgc"],
-                  1381500001,
-                  "hsl(0, 70%, 50%)",
-                  1381500002,
-                  "hsl(137.5, 70%, 50%)",
-                  1381500003,
-                  "hsl(275, 70%, 50%)",
-                  1381500004,
-                  "hsl(52.5, 70%, 50%)",
-                  1381500005,
-                  "hsl(190, 70%, 50%)",
-                  1381500006,
-                  "hsl(327.5, 70%, 50%)",
-                  1381500007,
-                  "hsl(105, 70%, 50%)",
-                  1381500008,
-                  "hsl(242.5, 70%, 50%)",
-                  1381500009,
-                  "hsl(20, 70%, 50%)",
-                  1381500010,
-                  "hsl(157.5, 70%, 50%)",
-                  1381500011,
-                  "hsl(295, 70%, 50%)",
-                  1381500012,
-                  "hsl(72.5, 70%, 50%)",
-                  1381500013,
-                  "hsl(210, 70%, 50%)",
-                  1381500014,
-                  "hsl(347.5, 70%, 50%)",
-                  1381500015,
-                  "hsl(125, 70%, 50%)",
-                  1381500016,
-                  "hsl(262.5, 70%, 50%)",
-                  1381500017,
-                  "hsl(40, 70%, 50%)",
-                  1381500018,
-                  "hsl(177.5, 70%, 50%)",
-                  1381500019,
-                  "hsl(315, 70%, 50%)",
-                  1381500020,
-                  "hsl(92.5, 70%, 50%)",
-                  1381500021,
-                  "hsl(230, 70%, 50%)",
-                  1381500022,
-                  "hsl(7.5, 70%, 50%)",
-                  1381500023,
-                  "hsl(145, 70%, 50%)",
-                  1381500024,
-                  "hsl(282.5, 70%, 50%)",
-                  1381500025,
-                  "hsl(60, 70%, 50%)",
-                  1381500026,
-                  "hsl(197.5, 70%, 50%)",
-                  1381500027,
-                  "hsl(335, 70%, 50%)",
-                  1381500028,
-                  "hsl(112.5, 70%, 50%)",
-                  1381500029,
-                  "hsl(250, 70%, 50%)",
-                  1381500030,
-                  "hsl(27.5, 70%, 50%)",
-                  1381500031,
-                  "hsl(165, 70%, 50%)",
-                  1381500032,
-                  "hsl(302.5, 70%, 50%)",
-                  1381500033,
-                  "hsl(80, 70%, 50%)",
-                  1381500034,
-                  "hsl(217.5, 70%, 50%)",
-                  1381500035,
-                  "hsl(355, 70%, 50%)",
-                  1381500036,
-                  "hsl(132.5, 70%, 50%)",
-                  1381500037,
-                  "hsl(270, 70%, 50%)",
-                  1381500038,
-                  "hsl(47.5, 70%, 50%)",
+                  ...Object.entries(BARANGAY_COLORS).flatMap(
+                    ([psgc, color]) => [parseInt(psgc), color]
+                  ),
+                  "#990F02",
                 ],
               ]
             );
@@ -618,7 +471,7 @@ const MapViewV2 = () => {
               [
                 "case",
                 ["==", ["get", "adm4_psgc"], clickedPsgc],
-                "#22577A", // Bright red for selected
+                "#22577A", // Blue for selected
                 "#990F02", // Dark red for others
               ]
             );
@@ -663,195 +516,37 @@ const MapViewV2 = () => {
         type: "line",
         source: "combinedBoundaries",
         paint: {
-          "line-color": [
-            "match",
-            ["get", "id"],
-            1381500001,
-            "hsl(0, 70%, 40%)",
-            1381500002,
-            "hsl(137.5, 70%, 40%)",
-            1381500003,
-            "hsl(275, 70%, 40%)",
-            1381500004,
-            "hsl(52.5, 70%, 40%)",
-            1381500005,
-            "hsl(190, 70%, 40%)",
-            1381500006,
-            "hsl(327.5, 70%, 40%)",
-            1381500007,
-            "hsl(105, 70%, 40%)",
-            1381500008,
-            "hsl(242.5, 70%, 40%)",
-            1381500009,
-            "hsl(20, 70%, 40%)",
-            1381500010,
-            "hsl(157.5, 70%, 40%)",
-            1381500011,
-            "hsl(295, 70%, 40%)",
-            1381500012,
-            "hsl(72.5, 70%, 40%)",
-            1381500013,
-            "hsl(210, 70%, 40%)",
-            1381500014,
-            "hsl(347.5, 70%, 40%)",
-            1381500015,
-            "hsl(125, 70%, 40%)",
-            1381500016,
-            "hsl(262.5, 70%, 40%)",
-            1381500017,
-            "hsl(40, 70%, 40%)",
-            1381500018,
-            "hsl(177.5, 70%, 40%)",
-            1381500019,
-            "hsl(315, 70%, 40%)",
-            1381500020,
-            "hsl(92.5, 70%, 40%)",
-            1381500021,
-            "hsl(230, 70%, 40%)",
-            1381500022,
-            "hsl(7.5, 70%, 40%)",
-            1381500023,
-            "hsl(145, 70%, 40%)",
-            1381500024,
-            "hsl(282.5, 70%, 40%)",
-            1381500025,
-            "hsl(60, 70%, 40%)",
-            1381500026,
-            "hsl(197.5, 70%, 40%)",
-            1381500027,
-            "hsl(335, 70%, 40%)",
-            1381500028,
-            "hsl(112.5, 70%, 40%)",
-            1381500029,
-            "hsl(250, 70%, 40%)",
-            1381500030,
-            "hsl(27.5, 70%, 40%)",
-            1381500031,
-            "hsl(165, 70%, 40%)",
-            1381500032,
-            "hsl(302.5, 70%, 40%)",
-            1381500033,
-            "hsl(80, 70%, 40%)",
-            1381500034,
-            "hsl(217.5, 70%, 40%)",
-            1381500035,
-            "hsl(355, 70%, 40%)",
-            1381500036,
-            "hsl(132.5, 70%, 40%)",
-            1381500037,
-            "hsl(270, 70%, 40%)",
-            1381500038,
-            "hsl(47.5, 70%, 40%)",
-            "#FFFFFF",
-          ],
+          "line-color": "#FFFFFF",
           "line-width": 2.5,
         },
       });
 
-      geojsons.forEach((geojson) => {
+      geojsons.forEach((geojson, i) => {
         const features = geojson.features || [geojson];
 
-        features.forEach((feature, index) => {
-          if (
-            feature.geometry.type === "Polygon" ||
-            feature.geometry.type === "MultiPolygon"
-          ) {
-            let coords = [];
-            if (feature.geometry.type === "Polygon") {
-              coords = feature.geometry.coordinates[0];
-            } else if (feature.geometry.type === "MultiPolygon") {
-              coords = feature.geometry.coordinates[0][0];
-            }
+        features.forEach((feature) => {
+          if (feature.geometry?.type === "Point") {
+            const [lon, lat] = feature.geometry.coordinates;
+            const name =
+              feature.properties?.name ||
+              geojsonFiles[i].split("/").pop().replace(".geojson", "");
 
-            const isPointInPolygon = (point, polygon) => {
-              let inside = false;
-              for (
-                let i = 0, j = polygon.length - 1;
-                i < polygon.length;
-                j = i++
-              ) {
-                const xi = polygon[i][0],
-                  yi = polygon[i][1];
-                const xj = polygon[j][0],
-                  yj = polygon[j][1];
-                const intersect =
-                  yi > point[1] !== yj > point[1] &&
-                  point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
-                if (intersect) inside = !inside;
-              }
-              return inside;
-            };
+            const el = document.createElement("div");
+            el.className = "marker";
+            el.style.width = "14px";
+            el.style.height = "14px";
+            el.style.backgroundColor = "#FF0000";
+            el.style.borderRadius = "50%";
+            el.style.border = "2px solid white";
+            el.style.cursor = "pointer";
+            el.style.boxShadow = "0 0 5px rgba(0,0,0,0.3)";
 
-            let area = 0;
-            let centroidLon = 0;
-            let centroidLat = 0;
+            const popup = new maplibregl.Popup({ offset: 25 }).setText(name);
 
-            for (let i = 0; i < coords.length - 1; i++) {
-              const [x0, y0] = coords[i];
-              const [x1, y1] = coords[i + 1];
-              const a = x0 * y1 - x1 * y0;
-              area += a;
-              centroidLon += (x0 + x1) * a;
-              centroidLat += (y0 + y1) * a;
-            }
-
-            area *= 0.5;
-            centroidLon /= 6 * area;
-            centroidLat /= 6 * area;
-
-            if (!isPointInPolygon([centroidLon, centroidLat], coords)) {
-              let minLon = Infinity,
-                maxLon = -Infinity;
-              let minLat = Infinity,
-                maxLat = -Infinity;
-
-              coords.forEach(([lon, lat]) => {
-                minLon = Math.min(minLon, lon);
-                maxLon = Math.max(maxLon, lon);
-                minLat = Math.min(minLat, lat);
-                maxLat = Math.max(maxLat, lat);
-              });
-
-              centroidLon = (minLon + maxLon) / 2;
-              centroidLat = (minLat + maxLat) / 2;
-            }
-
-            const name = feature.properties?.adm4_en || `Barangay ${index + 1}`;
-
-            const labelSourceId = `label-${
-              feature.properties?.adm4_psgc || index
-            }`;
-            map.current.addSource(labelSourceId, {
-              type: "geojson",
-              data: {
-                type: "Feature",
-                geometry: {
-                  type: "Point",
-                  coordinates: [centroidLon, centroidLat],
-                },
-                properties: {
-                  name: name,
-                },
-              },
-            });
-
-            map.current.addLayer({
-              id: `label-layer-${feature.properties?.adm4_psgc || index}`,
-              type: "symbol",
-              source: labelSourceId,
-              layout: {
-                "text-field": ["get", "name"],
-                "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
-                "text-size": 12,
-                "text-offset": [0, 0],
-                "text-anchor": "center",
-              },
-              paint: {
-                "text-color": "#000000",
-                "text-halo-color": "#FFFFFF",
-                "text-halo-width": 2,
-              },
-            });
+            new maplibregl.Marker(el)
+              .setLngLat([lon, lat])
+              .setPopup(popup)
+              .addTo(map.current);
           }
         });
       });
@@ -893,92 +588,394 @@ const MapViewV2 = () => {
 
   return (
     <div style={{ position: "relative", width: "100%", height: "88vh" }}>
-      <div
-        style={{
-          position: "absolute",
-          top: "20px",
-          left: "20px",
-          zIndex: 1000,
-          display: "flex",
-          gap: "10px",
-          backgroundColor: "white",
-          borderRadius: "8px",
-          padding: "8px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        }}
-      >
-        <button
-          onClick={toggle2D3D}
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+        <div
           style={{
-            padding: "10px 20px",
-            border: "none",
-            borderRadius: "6px",
-            backgroundColor: !is3D ? "#FF0000" : "#f0f0f0",
-            color: !is3D ? "white" : "#333",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            fontSize: "14px",
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            zIndex: 1000,
+            display: "flex",
+            gap: "10px",
+            backgroundColor: "white",
+            borderRadius: "8px",
+            padding: "8px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           }}
         >
-          2D
-        </button>
-        <button
-          onClick={toggle2D3D}
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            borderRadius: "6px",
-            backgroundColor: is3D ? "#FF0000" : "#f0f0f0",
-            color: is3D ? "white" : "#333",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            fontSize: "14px",
-          }}
-        >
-          3D
-        </button>
-        <button
-          onClick={toggleElevation}
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            borderRadius: "6px",
-            backgroundColor: showElevation ? "#2196F3" : "#f0f0f0",
-            color: showElevation ? "white" : "#333",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            fontSize: "14px",
-          }}
-        >
-          {showElevation ? "Elevation ON" : "Elevation OFF"}
-        </button>
-        {selectedBarangay && (
           <button
-            onClick={resetSelection}
+            onClick={toggle2D3D}
             style={{
               padding: "10px 20px",
               border: "none",
               borderRadius: "6px",
-              backgroundColor: "#4CAF50",
-              color: "white",
+              backgroundColor: !is3D ? "#FF0000" : "#f0f0f0",
+              color: !is3D ? "white" : "#333",
               fontWeight: "600",
               cursor: "pointer",
               transition: "all 0.3s ease",
               fontSize: "14px",
             }}
           >
-            Reset
+            2D
           </button>
+          <button
+            onClick={toggle2D3D}
+            style={{
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "6px",
+              backgroundColor: is3D ? "#FF0000" : "#f0f0f0",
+              color: is3D ? "white" : "#333",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              fontSize: "14px",
+            }}
+          >
+            3D
+          </button>
+          <button
+            onClick={toggleElevation}
+            style={{
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "6px",
+              backgroundColor: showElevation ? "#2196F3" : "#f0f0f0",
+              color: showElevation ? "white" : "#333",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              fontSize: "14px",
+            }}
+          >
+            {showElevation ? "Elevation ON" : "Elevation OFF"}
+          </button>
+
+          <button
+            style={{
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "6px",
+              backgroundColor: showElevation ? "#2196F3" : "#f0f0f0",
+              color: showElevation ? "white" : "#333",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              fontSize: "14px",
+            }}
+          >
+            Weather
+          </button>
+          {selectedBarangay && (
+            <button
+              onClick={resetSelection}
+              style={{
+                padding: "10px 20px",
+                border: "none",
+                borderRadius: "6px",
+                backgroundColor: "#4CAF50",
+                color: "white",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                fontSize: "14px",
+              }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* Weather Modal - Inside Map on Right Side */}
+        {showModal && (
+          <div
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "20px",
+              bottom: "20px",
+              width: "380px",
+              backgroundColor: "white",
+              borderRadius: "12px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              overflowY: "auto",
+              padding: "24px",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "20px",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "24px", color: "#333" }}>
+                {weatherData?.barangay || "Loading..."}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{
+                  border: "none",
+                  background: "none",
+                  fontSize: "28px",
+                  cursor: "pointer",
+                  color: "#666",
+                  padding: "0",
+                  width: "30px",
+                  height: "30px",
+                  lineHeight: "30px",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {loadingWeather ? (
+              <div style={{ textAlign: "center", padding: "20px" }}>
+                <div
+                  style={{
+                    border: "4px solid #f3f3f3",
+                    borderTop: "4px solid #3498db",
+                    borderRadius: "50%",
+                    width: "40px",
+                    height: "40px",
+                    animation: "spin 1s linear infinite",
+                    margin: "0 auto",
+                  }}
+                ></div>
+                <p style={{ marginTop: "10px", color: "#666" }}>
+                  Loading weather data...
+                </p>
+              </div>
+            ) : weatherData?.error ? (
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "#e74c3c",
+                }}
+              >
+                <p>{weatherData.error}</p>
+              </div>
+            ) : weatherData ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                    padding: "16px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        color: "#666",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Temperature
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: "bold",
+                        color: "#FF6B6B",
+                      }}
+                    >
+                      {weatherData.temperature}°C
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        color: "#666",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Humidity
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "32px",
+                        fontWeight: "bold",
+                        color: "#4ECDC4",
+                      }}
+                    >
+                      {weatherData.humidity}%
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "12px",
+                      backgroundColor: "#e3f2fd",
+                      borderRadius: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Wind Speed
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "20px",
+                        fontWeight: "600",
+                        color: "#2196F3",
+                      }}
+                    >
+                      {weatherData.windSpeed} km/h
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px",
+                      backgroundColor: "#e8f5e9",
+                      borderRadius: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Precipitation
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "20px",
+                        fontWeight: "600",
+                        color: "#4CAF50",
+                      }}
+                    >
+                      {weatherData.precipitation} mm
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    gap: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "12px",
+                      backgroundColor: "#fce4ec",
+                      borderRadius: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Elevation
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "20px",
+                        fontWeight: "600",
+                        color: "#E91E63",
+                      }}
+                    >
+                      {weatherData.elevation.toFixed(2)} meters
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: "16px",
+                    backgroundColor: "#fff3e0",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#666",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Weather Condition
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "600",
+                      color: "#FF9800",
+                    }}
+                  >
+                    {getWeatherDescription(weatherData.weatherCode)}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#999",
+                    textAlign: "center",
+                    marginTop: "8px",
+                  }}
+                >
+                  Data from Open-Meteo API • Asia/Manila timezone
+                </div>
+              </div>
+            ) : null}
+          </div>
         )}
+
+        <div
+          ref={mapContainer}
+          style={{ width: "100%", height: "100%", borderRadius: "8px" }}
+        />
       </div>
 
-      <div
-        ref={mapContainer}
-        style={{ width: "100%", height: "100%", borderRadius: "8px" }}
-      />
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };
