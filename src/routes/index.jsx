@@ -4,6 +4,7 @@ import Login from "@pages/Login";
 import Home from "@pages/Home";
 import Map from "@pages/Map";
 import MapV2 from "@pages/Mapv2";
+import Weather from "@pages/Weather";
 const NotFound = () => (
   <div className="h-dvh bg-header flex flex-col items-center justify-center">
     <span className="text-5xl font-bold text-white text-shadow-lg/30">
@@ -24,6 +25,8 @@ const Routers = () => {
         <Route path="admin" element={<Home />} />
         <Route path="map" element={<Map />} />
         <Route path="mapv2" element={<MapV2 />} />
+        <Route path="weather" element={<Weather />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
 
       {/* Catch-all 404 with redirect */}

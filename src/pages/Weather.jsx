@@ -1,24 +1,25 @@
-// MapView.jsx
+// Weather.jsx
 import React, { useRef, useEffect, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button } from "antd";
-import { Mountain, MountainSnow } from "lucide-react";
+import { Mountain, MountainSnow, Cloud, Wind } from "lucide-react";
 
-const MapView = ({
+const Weather = ({
   center = [121.0, 14.6], // default to Metro Manila (lon, lat)
   zoom = 12,
   styleUrl = "https://api.jawg.io/styles/4300a91b-b03a-451a-b7ce-f02640d7d30a.json?access-token=dyAlxp8V4w8FBKBi4Sbus1xMvIg6ojhrGV2mcZu0NacG33dYSdUP4aYMF9rSZS83",
   onMapLoad = () => {},
 
-  // 3D options
-
-  // MapTiler terrain-rgb tiles.json
-
+  // 3D
   terrainExaggeration = 1.0,
   enable3DBuildings = false,
 }) => {
   const [terrainEnabled, setTerrainEnabled] = useState(false);
+  const [cloudsEnabled, setCloudsEnabled] = useState(true);
+  const [windEnabled, setWindEnabled] = useState(true);
+
+  const OPENWEATHER_API_KEY = "fc458895bd9b40aa34c1f632f8e06a28";
 
   const terrainSourceUrl = terrainEnabled
     ? "https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=EwtO1Ev8tHi9GJOuWxBy"
@@ -49,7 +50,7 @@ const MapView = ({
   };
 
   useEffect(() => {
-    if (mapInstance.current) return; // initialize only once
+    if (mapInstance.current) return;
 
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -58,34 +59,19 @@ const MapView = ({
       zoom: zoom,
     });
 
-    // add navigation controls (zoom + rotate)
     mapInstance.current.addControl(
       new maplibregl.NavigationControl(),
       "top-right"
     );
 
-    // Your existing onMapLoad callback
     mapInstance.current.on("load", () => {
       onMapLoad(mapInstance.current);
     });
 
-    // Load and render your boundary/marker data
     mapInstance.current.on("load", async () => {
-      // ✅ List of GeoJSON files
-      const geojsonFiles = [
-        // "/data/fortBonifacio.geojson",
-        // "/data/westernBicutan.geojson",
-        // "/data/centralBicutan.geojson",
-        // "/data/upperBicutan.geojson",
-        // "/data/newLowerBicutan.geojson",
-        // "/data/bagumbayan.geojson",
-        // "/data/tuktukan.geojson",
-        // "/data/pinagsama.geojson",
-        // "/data/maharlika.geojson",
-        "/data/taguig.geojson",
-      ];
+      // Load GeoJSON boundaries
+      const geojsonFiles = ["/data/taguig.geojson"];
 
-      // Fetch all files
       const geojsons = await Promise.all(
         geojsonFiles.map(async (url) => {
           const response = await fetch(url);
@@ -93,19 +79,16 @@ const MapView = ({
         })
       );
 
-      // ✅ Combine all features into one FeatureCollection
       const combinedGeoJSON = {
         type: "FeatureCollection",
         features: geojsons.flatMap((g) => g.features || [g]),
       };
 
-      // Add as a map source
       mapInstance.current.addSource("combinedBoundaries", {
         type: "geojson",
         data: combinedGeoJSON,
       });
 
-      // Fill layer
       mapInstance.current.addLayer({
         id: "combined-fill",
         type: "fill",
@@ -116,7 +99,6 @@ const MapView = ({
         },
       });
 
-      // Border line layer
       mapInstance.current.addLayer({
         id: "combined-border",
         type: "line",
@@ -132,11 +114,11 @@ const MapView = ({
         type: "symbol",
         source: "combinedBoundaries",
         layout: {
-          "text-field": ["get", "adm4_en"], // MapLibre GL expression syntax
+          "text-field": ["get", "adm4_en"],
           "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
           "text-size": 14,
           "text-anchor": "center",
-          "text-allow-overlap": false, // Optional: allows labels to overlap
+          "text-allow-overlap": false,
         },
         paint: {
           "text-color": "#333333",
@@ -145,37 +127,7 @@ const MapView = ({
         },
       });
 
-      // Add point markers (if any features are Points)
-      geojsons.forEach((geojson, i) => {
-        const features = geojson.features || [geojson];
-        features.forEach((feature) => {
-          if (feature.geometry?.type === "Point") {
-            const [lon, lat] = feature.geometry.coordinates;
-            const name =
-              feature.properties?.name ||
-              geojsonFiles[i].split("/").pop().replace(".geojson", "");
-
-            const el = document.createElement("div");
-            el.className = "marker";
-            el.style.width = "14px";
-            el.style.height = "14px";
-            el.style.backgroundColor = "#FF0000";
-            el.style.borderRadius = "50%";
-            el.style.border = "2px solid white";
-            el.style.cursor = "pointer";
-            el.style.boxShadow = "0 0 5px rgba(0,0,0,0.3)";
-
-            const popup = new maplibregl.Popup({ offset: 25 }).setText(name);
-
-            new maplibregl.Marker(el)
-              .setLngLat([lon, lat])
-              .setPopup(popup)
-              .addTo(mapInstance.current);
-          }
-        });
-      });
-
-      // ✅ Auto zoom to show all features
+      // Fit bounds
       const bounds = new maplibregl.LngLatBounds();
       combinedGeoJSON.features.forEach((f) => {
         if (f.geometry?.type === "Polygon") {
@@ -188,15 +140,16 @@ const MapView = ({
             .forEach(([lon, lat]) => bounds.extend([lon, lat]));
         }
       });
+
       if (!bounds.isEmpty()) {
         mapInstance.current.fitBounds(bounds, { padding: 40 });
       }
 
-      // after you add the "terrain-dem" source
+      // --- HILLSHADE ---
       if (!mapInstance.current.getSource("hillshade-dem")) {
         mapInstance.current.addSource("hillshade-dem", {
           type: "raster-dem",
-          url: terrainSourceUrl, // can reuse MapTiler terrain-rgb
+          url: terrainSourceUrl,
           tileSize: 512,
         });
       }
@@ -209,20 +162,12 @@ const MapView = ({
         });
       }
 
-      // Terrain control (MapLibre 5+)
-      // mapInstance.current.addControl(
-      //   new maplibregl.TerrainControl({
-      //     source: "terrain-dem",
-      //     exaggeration: terrainExaggeration,
-      //   })
-      // );
-
-      // --- 3D TERRAIN (MapTiler) ---
+      // --- TERRAIN ---
       if (enableTerrain && terrainSourceUrl) {
         if (!mapInstance.current.getSource("terrain-dem")) {
           mapInstance.current.addSource("terrain-dem", {
             type: "raster-dem",
-            url: terrainSourceUrl, // MapTiler terrain-rgb tiles.json
+            url: terrainSourceUrl,
             tileSize: 512,
             maxzoom: 14,
           });
@@ -232,7 +177,6 @@ const MapView = ({
           exaggeration: terrainExaggeration,
         });
 
-        // Optional: sky + pitch for better 3D effect
         if (!mapInstance.current.getLayer("sky")) {
           mapInstance.current.addLayer({
             id: "sky",
@@ -245,53 +189,62 @@ const MapView = ({
           });
         }
 
-        mapInstance.current.setPitch(0);
-        mapInstance.current.setBearing(0);
-        mapInstance.current.zoomTo(14, { duration: 1000 });
-
-        // Tilt the camera so elevation is visible
         mapInstance.current.setPitch(
           Math.max(mapInstance.current.getPitch(), 60)
         );
       }
 
-      // --- 3D BUILDINGS (optional) ---
-      if (enable3DBuildings) {
-        const info = findBuildingSourceInfo(mapInstance.current);
-        const labelLayerId = getFirstSymbolLayerId(mapInstance.current);
+      // ********************************************************************
+      // 🌥️ OPENWEATHER — CLOUD & WIND LAYERS
+      // ********************************************************************
 
-        const sourceId = info?.source || "composite";
-        const sourceLayer = info?.sourceLayer || "building";
+      // CLOUDS
+      mapInstance.current.addSource("clouds", {
+        type: "raster",
+        tiles: [
+          `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+        ],
+        tileSize: 256,
+      });
 
-        if (!mapInstance.current.getLayer("3d-buildings")) {
-          mapInstance.current.addLayer(
-            {
-              id: "3d-buildings",
-              type: "fill-extrusion",
-              source: sourceId,
-              "source-layer": sourceLayer,
-              minzoom: 15,
-              paint: {
-                "fill-extrusion-color": "#aaa",
-                "fill-extrusion-height": [
-                  "coalesce",
-                  ["get", "render_height"],
-                  ["get", "height"],
-                  20,
-                ],
-                "fill-extrusion-base": [
-                  "coalesce",
-                  ["get", "render_min_height"],
-                  ["get", "min_height"],
-                  0,
-                ],
-                "fill-extrusion-opacity": 0.6,
-              },
-            },
-            labelLayerId || undefined
-          );
-        }
-      }
+      mapInstance.current.addLayer({
+        id: "clouds-layer",
+        type: "raster",
+        source: "clouds",
+        paint: {
+          "raster-opacity": 0.6,
+        },
+      });
+
+      // WIND
+      mapInstance.current.addSource("wind", {
+        type: "raster",
+        tiles: [
+          `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${OPENWEATHER_API_KEY}`,
+        ],
+        tileSize: 256,
+      });
+
+      mapInstance.current.addLayer({
+        id: "wind-layer",
+        type: "raster",
+        source: "wind",
+        paint: {
+          "raster-opacity": 0.55,
+        },
+      });
+
+      // Initial toggle states
+      mapInstance.current.setLayoutProperty(
+        "clouds-layer",
+        "visibility",
+        cloudsEnabled ? "visible" : "none"
+      );
+      mapInstance.current.setLayoutProperty(
+        "wind-layer",
+        "visibility",
+        windEnabled ? "visible" : "none"
+      );
     });
 
     return () => {
@@ -311,18 +264,62 @@ const MapView = ({
     enable3DBuildings,
   ]);
 
+  // Toggle clouds layer
+  const toggleClouds = () => {
+    const map = mapInstance.current;
+    const newState = !cloudsEnabled;
+    setCloudsEnabled(newState);
+    map.setLayoutProperty(
+      "clouds-layer",
+      "visibility",
+      newState ? "visible" : "none"
+    );
+  };
+
+  // Toggle wind layer
+  const toggleWind = () => {
+    const map = mapInstance.current;
+    const newState = !windEnabled;
+    setWindEnabled(newState);
+    map.setLayoutProperty(
+      "wind-layer",
+      "visibility",
+      newState ? "visible" : "none"
+    );
+  };
+
   return (
     <>
+      {/* Terrain Toggle */}
       <Button
         style={{ position: "absolute", zIndex: 1 }}
         onClick={() => setTerrainEnabled((prev) => !prev)}
-        className=" right-4 top-44 p-0 px-2"
+        className="right-4 top-44 p-0 px-2"
       >
         {terrainEnabled ? <Mountain size={16} /> : <MountainSnow size={16} />}
       </Button>
+
+      {/* Clouds Toggle */}
+      <Button
+        style={{ position: "absolute", zIndex: 1 }}
+        onClick={toggleClouds}
+        className="right-4 top-56 p-0 px-2"
+      >
+        <Cloud size={16} />
+      </Button>
+
+      {/* Wind Toggle */}
+      <Button
+        style={{ position: "absolute", zIndex: 1 }}
+        onClick={toggleWind}
+        className="right-4 top-68 p-0 px-2"
+      >
+        <Wind size={16} />
+      </Button>
+
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
     </>
   );
 };
 
-export default MapView;
+export default Weather;
