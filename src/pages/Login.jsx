@@ -6,7 +6,7 @@ import {
   LockOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { skyImg } from "@assets/images";
+import { dgsiLogo, skyImg } from "@assets/images";
 
 const Login = () => {
   return (
@@ -15,7 +15,8 @@ const Login = () => {
       style={{ backgroundImage: `url(${skyImg})` }}
     >
       <div className="bg-black/60 w-full h-full flex flex-col justify-center items-center">
-        <div className="bg-white/20 ring-1 ring-white/50 px-12 py-10 rounded-2xl font-bold text-3xl text-white text-shadow-lg shadow-xl flex-col gap-4 flex w-96">
+        <div className="bg-white/20 ring-1 ring-white/50 px-12 py-10 rounded-2xl font-bold text-4xl text-white text-shadow-lg shadow-xl flex-col gap-4 flex w-96">
+          <img src={dgsiLogo} alt="DGSI LOGO" className="pb-2" />
           <span className="w-full justify-center flex">EWS Project</span>
           <span className="w-full justify-center flex text-2xl">Login</span>
           <Form layout="vertical" className="flex flex-col w-full gap-4 py-4">
@@ -58,7 +59,7 @@ const Login = () => {
               <Button
                 type="primary"
                 className="w-full font-bold py-4 mt-4"
-                href="/admin"
+                href="/admin/dashboard"
               >
                 Login
               </Button>

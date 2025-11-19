@@ -1,7 +1,7 @@
 import MapViewV2 from "@components/MapViewV2";
 import React from "react";
 
-const Map = () => {
+const Mapv2 = () => {
   return (
     <div className="w-full h-full">
       <MapViewV2 />
@@ -9,4 +9,4 @@ const Map = () => {
   );
 };
 
-export default Map;
+export default Mapv2;
