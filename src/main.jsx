@@ -36,12 +36,12 @@ createRoot(document.getElementById("root")).render(
               activeBorderColor: "#308a4e",
               activeShadow: "0 0 0 2px rgba(48,138,78,0.3)",
             },
-            Menu: {
-              colorBgContainer: "#ffffff",
-              itemSelectedBg: "#d4edda", // light green background
-              itemSelectedColor: "#0f5132", // dark green text
-              itemMarginInline: 10, // removes the left/right gaps
-            },
+            // Menu: {
+            //   colorBgContainer: "#ffffff",
+            //   itemSelectedBg: "#d4edda", // light green background
+            //   itemSelectedColor: "#0f5132", // dark green text
+            //   itemMarginInline: 10, // removes the left/right gaps
+            // },
           },
         }}
       >
