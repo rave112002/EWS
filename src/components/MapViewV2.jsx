@@ -3,6 +3,9 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { WEATHER_CODES } from "../constants/weatherCode";
 import { BARANGAY_COLORS } from "../constants/mapColors";
+import ActionButton from "./Button/ActionButton";
+import WeatherInfoModal from "./Modal/WeatherInfoModal";
+import ElevationInfoModal from "./Modal/ElevationInfoModal";
 
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
@@ -10,11 +13,17 @@ const MapViewV2 = () => {
   const [is3D, setIs3D] = useState(false);
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [showElevation, setShowElevation] = useState(false);
+  const [showWeather, setShowWeather] = useState(false);
+  const [showPAR, setShowPAR] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [weatherData, setWeatherData] = useState(null);
+  const [elevationData, setElevationData] = useState(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const elevationCacheRef = useRef({});
   const showElevationRef = useRef(false);
+  const showWeatherRef = useRef(false);
+  const parBoundsRef = useRef(null);
+  const defaultBoundsRef = useRef(null);
 
   const toggle2D3D = () => {
     if (!map.current) return;
@@ -44,8 +53,9 @@ const MapViewV2 = () => {
     setSelectedBarangay(null);
     setShowModal(false);
     setWeatherData(null);
+    setElevationData(null);
 
-    if (showElevation) {
+    if (showElevation || showWeather) {
       // Reset to original elevation heights
       const elevationCache = elevationCacheRef.current;
       map.current.setPaintProperty(
@@ -69,7 +79,7 @@ const MapViewV2 = () => {
           parseInt(psgc),
           color,
         ]),
-        "#990F02", // default color
+        "#8AFF8A", // default color
       ]);
     } else {
       // Reset to flat uniform height
@@ -82,7 +92,7 @@ const MapViewV2 = () => {
       map.current.setPaintProperty(
         "combined-fill-3d",
         "fill-extrusion-color",
-        "#990F02"
+        "#8AFF8A"
       );
     }
 
@@ -100,10 +110,25 @@ const MapViewV2 = () => {
     const newShowElevation = !showElevation;
     setShowElevation(newShowElevation);
     showElevationRef.current = newShowElevation;
+    setShowWeather(false); // Turn off weather when elevation is toggled
+    showWeatherRef.current = false;
+    setShowPAR(false); // Turn off PAR when elevation is toggled
     setSelectedBarangay(null); // Reset selection when toggling
     setShowModal(false);
+    setWeatherData(null);
+    setElevationData(null);
 
     if (newShowElevation) {
+      // Zoom to default bounds
+      if (defaultBoundsRef.current && !defaultBoundsRef.current.isEmpty()) {
+        map.current.fitBounds(defaultBoundsRef.current, {
+          padding: 40,
+          pitch: 0,
+          bearing: 0,
+          duration: 1000,
+        });
+      }
+
       // Show elevation-based heights
       const elevationCache = elevationCacheRef.current;
       map.current.setPaintProperty(
@@ -127,7 +152,7 @@ const MapViewV2 = () => {
           parseInt(psgc),
           color,
         ]),
-        "#990F02", // default color
+        "#8AFF8A", // default color
       ]);
     } else {
       // Show uniform flat height
@@ -140,8 +165,128 @@ const MapViewV2 = () => {
       map.current.setPaintProperty(
         "combined-fill-3d",
         "fill-extrusion-color",
-        "#990F02"
+        "#8AFF8A"
       );
+    }
+
+    // Reset opacity
+    map.current.setPaintProperty(
+      "combined-fill-3d",
+      "fill-extrusion-opacity",
+      0.5
+    );
+  };
+
+  const toggleWeather = () => {
+    if (!map.current) return;
+
+    const newShowWeather = !showWeather;
+    setShowWeather(newShowWeather);
+    showWeatherRef.current = newShowWeather;
+    setShowElevation(false); // Turn off elevation when weather is toggled
+    showElevationRef.current = false;
+    setShowPAR(false); // Turn off PAR when weather is toggled
+    setSelectedBarangay(null); // Reset selection when toggling
+    setShowModal(false);
+    setWeatherData(null);
+    setElevationData(null);
+
+    if (newShowWeather) {
+      // Show elevation-based heights for weather mode
+      const elevationCache = elevationCacheRef.current;
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        [
+          "match",
+          ["get", "adm4_psgc"],
+          ...Object.entries(elevationCache).flatMap(([psgc, elevation]) => [
+            parseInt(psgc),
+            elevation * 15,
+          ]),
+          150,
+        ]
+      );
+      // Enable colors
+      map.current.setPaintProperty("combined-fill-3d", "fill-extrusion-color", [
+        "match",
+        ["get", "adm4_psgc"],
+        ...Object.entries(BARANGAY_COLORS).flatMap(([psgc, color]) => [
+          parseInt(psgc),
+          color,
+        ]),
+        "#8AFF8A", // default color
+      ]);
+    } else {
+      // Show uniform flat height
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        150
+      );
+      // Set to dark red color
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#8AFF8A"
+      );
+    }
+
+    // Reset opacity
+    map.current.setPaintProperty(
+      "combined-fill-3d",
+      "fill-extrusion-opacity",
+      0.5
+    );
+  };
+
+  const togglePAR = () => {
+    if (!map.current) return;
+
+    const newShowPAR = !showPAR;
+    setShowPAR(newShowPAR);
+    setShowElevation(false); // Turn off elevation when PAR is toggled
+    showElevationRef.current = false;
+    setShowWeather(false); // Turn off weather when PAR is toggled
+    showWeatherRef.current = false;
+    setSelectedBarangay(null);
+    setShowModal(false);
+    setWeatherData(null);
+    setElevationData(null);
+
+    if (newShowPAR) {
+      // Zoom out to PAR bounds
+      if (parBoundsRef.current && !parBoundsRef.current.isEmpty()) {
+        map.current.fitBounds(parBoundsRef.current, {
+          padding: 150,
+          pitch: 0,
+          bearing: 0,
+          duration: 1000,
+        });
+      }
+
+      // Reset to flat uniform height
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        150
+      );
+      // Set to dark red color
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#8AFF8A"
+      );
+    } else {
+      // Zoom back to default bounds
+      if (defaultBoundsRef.current && !defaultBoundsRef.current.isEmpty()) {
+        map.current.fitBounds(defaultBoundsRef.current, {
+          padding: 40,
+          pitch: 0,
+          bearing: 0,
+          duration: 1000,
+        });
+      }
     }
 
     // Reset opacity
@@ -155,30 +300,40 @@ const MapViewV2 = () => {
   const fetchWeatherData = async (lat, lon, barangayName, psgc) => {
     setLoadingWeather(true);
     try {
-      // Using Open-Meteo API (free, no API key needed)
-      const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia/Manila`
-      );
-      const data = await response.json();
-
       // Get elevation from cache
       const elevation = elevationCacheRef.current[psgc] || 0;
 
-      setWeatherData({
-        barangay: barangayName,
-        temperature: data.current.temperature_2m,
-        humidity: data.current.relative_humidity_2m,
-        precipitation: data.current.precipitation,
-        windSpeed: data.current.wind_speed_10m,
-        weatherCode: data.current.weather_code,
-        elevation: elevation,
-      });
+      // Only fetch weather if weather mode is on
+      if (showWeatherRef.current) {
+        // Using Open-Meteo API (free, no API key needed)
+        const response = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia/Manila`
+        );
+        const data = await response.json();
+
+        setWeatherData({
+          barangay: barangayName,
+          temperature: data.current.temperature_2m,
+          humidity: data.current.relative_humidity_2m,
+          precipitation: data.current.precipitation,
+          windSpeed: data.current.wind_speed_10m,
+          weatherCode: data.current.weather_code,
+        });
+      } else if (showElevationRef.current) {
+        // Only show elevation data
+        setElevationData({
+          barangay: barangayName,
+          elevation: elevation,
+        });
+      }
     } catch (error) {
       console.error("Error fetching weather:", error);
-      setWeatherData({
-        barangay: barangayName,
-        error: "Unable to fetch weather data",
-      });
+      if (showWeatherRef.current) {
+        setWeatherData({
+          barangay: barangayName,
+          error: "Unable to fetch weather data",
+        });
+      }
     } finally {
       setLoadingWeather(false);
     }
@@ -243,6 +398,7 @@ const MapViewV2 = () => {
       );
 
       const geojsonFiles = ["/data/taguig.geojson"];
+      const parGeojsonFile = await fetch("/data/par.geojson");
 
       const geojsons = await Promise.all(
         geojsonFiles.map(async (url) => {
@@ -256,31 +412,24 @@ const MapViewV2 = () => {
         features: geojsons.flatMap((g) => g.features || [g]),
       };
 
-      const parGeoJSON = {
-        type: "FeatureCollection",
-        features: [
-          {
-            type: "Feature",
-            properties: {
-              name: "Philippine Area of Responsibility (PAR)",
-            },
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [
-                  [115, 5],
-                  [115, 15],
-                  [120, 21],
-                  [120, 25],
-                  [135, 25],
-                  [135, 5],
-                  [115, 5],
-                ],
-              ],
-            },
-          },
-        ],
-      };
+      const parGeoJSON = await parGeojsonFile.json();
+
+      // Calculate PAR bounds
+      const parBounds = new maplibregl.LngLatBounds();
+      if (parGeoJSON.features) {
+        parGeoJSON.features.forEach((f) => {
+          if (f.geometry.type === "Polygon") {
+            f.geometry.coordinates[0].forEach(([lon, lat]) =>
+              parBounds.extend([lon, lat])
+            );
+          } else if (f.geometry.type === "MultiPolygon") {
+            f.geometry.coordinates
+              .flat(2)
+              .forEach(([lon, lat]) => parBounds.extend([lon, lat]));
+          }
+        });
+      }
+      parBoundsRef.current = parBounds;
 
       map.current.addSource("parBoundary", {
         type: "geojson",
@@ -360,7 +509,7 @@ const MapViewV2 = () => {
         type: "fill-extrusion",
         source: "combinedBoundaries",
         paint: {
-          "fill-extrusion-color": "#990F02",
+          "fill-extrusion-color": "#8AFF8A",
           "fill-extrusion-opacity": 0.5,
           "fill-extrusion-height": 150,
           "fill-extrusion-base": 0,
@@ -372,7 +521,7 @@ const MapViewV2 = () => {
         id: "barangay-labels",
         type: "symbol",
         source: "combinedBoundaries",
-        minzoom: 10, // optional: show earlier if you want
+        minzoom: 10,
 
         layout: {
           "text-field": ["get", "adm4_en"],
@@ -380,8 +529,6 @@ const MapViewV2 = () => {
           "text-size": 12,
           "text-offset": [0, 0],
           "text-anchor": "center",
-
-          // 👇 VERY IMPORTANT
           "text-allow-overlap": true,
           "text-ignore-placement": true,
         },
@@ -427,12 +574,15 @@ const MapViewV2 = () => {
 
           // Use ref to get current elevation state
           const isElevationOn = showElevationRef.current;
+          const isWeatherOn = showWeatherRef.current;
 
-          // Fetch weather data and show modal
-          fetchWeatherData(centerLat, centerLon, barangayName, clickedPsgc);
-          setShowModal(true);
+          // Fetch weather data and show modal only if either mode is on
+          if (isElevationOn || isWeatherOn) {
+            fetchWeatherData(centerLat, centerLon, barangayName, clickedPsgc);
+            setShowModal(true);
+          }
 
-          if (isElevationOn) {
+          if (isElevationOn || isWeatherOn) {
             map.current.easeTo({
               center: [centerLon, centerLat],
               zoom: 14,
@@ -444,27 +594,26 @@ const MapViewV2 = () => {
           }
 
           // Update color based on selection
-          if (isElevationOn) {
-            // When elevation is ON, keep the colorful scheme but highlight selected
+          if (isElevationOn || isWeatherOn) {
+            // When elevation or weather is ON, keep the colorful scheme but highlight selected
             map.current.setPaintProperty(
               "combined-fill-3d",
               "fill-extrusion-color",
               [
                 "case",
                 ["==", ["get", "adm4_psgc"], clickedPsgc],
-                // Bright red for selected
                 [
                   "match",
                   ["get", "adm4_psgc"],
                   ...Object.entries(BARANGAY_COLORS).flatMap(
                     ([psgc, color]) => [parseInt(psgc), color]
                   ),
-                  "#990F02",
+                  "#8AFF8A",
                 ],
               ]
             );
           } else {
-            // When elevation is OFF, change from dark red to bright red for selected
+            // When both are OFF, change from dark red to blue for selected
             map.current.setPaintProperty(
               "combined-fill-3d",
               "fill-extrusion-color",
@@ -472,7 +621,7 @@ const MapViewV2 = () => {
                 "case",
                 ["==", ["get", "adm4_psgc"], clickedPsgc],
                 "#22577A", // Blue for selected
-                "#990F02", // Dark red for others
+                "#8AFF8A", // Dark red for others
               ]
             );
           }
@@ -564,6 +713,9 @@ const MapViewV2 = () => {
         }
       });
 
+      // Store default bounds
+      defaultBoundsRef.current = bounds;
+
       if (!bounds.isEmpty()) {
         map.current.fitBounds(bounds, {
           padding: 40,
@@ -579,393 +731,139 @@ const MapViewV2 = () => {
         showZoom: true,
         showCompass: true,
       }),
-      "top-right"
+      "bottom-right"
     );
 
     map.current.dragRotate.enable();
     map.current.touchZoomRotate.enableRotation();
-  }, [showElevation]);
+  }, [showElevation, showWeather]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "88vh" }}>
-      <div style={{ position: "relative", width: "100%", height: "100%" }}>
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            zIndex: 1000,
-            display: "flex",
-            gap: "10px",
-            backgroundColor: "white",
-            borderRadius: "8px",
-            padding: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          }}
-        >
-          <button
+    <div className="relative w-full h-[88vh]">
+      <div className="relative w-full h-full">
+        <div className="absolute z-1000 flex gap-2.5 bg-white rounded-lg p-2.5 shadow-md top-2.5 left-2.5">
+          <ActionButton
+            label="2D"
             onClick={toggle2D3D}
-            style={{
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor: !is3D ? "#FF0000" : "#f0f0f0",
-              color: !is3D ? "white" : "#333",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              fontSize: "14px",
-            }}
-          >
-            2D
-          </button>
-          <button
-            onClick={toggle2D3D}
-            style={{
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor: is3D ? "#FF0000" : "#f0f0f0",
-              color: is3D ? "white" : "#333",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              fontSize: "14px",
-            }}
-          >
-            3D
-          </button>
-          <button
-            onClick={toggleElevation}
-            style={{
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor: showElevation ? "#2196F3" : "#f0f0f0",
-              color: showElevation ? "white" : "#333",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              fontSize: "14px",
-            }}
-          >
-            {showElevation ? "Elevation ON" : "Elevation OFF"}
-          </button>
+            className={`${
+              !is3D
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
 
-          <button
-            style={{
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor: showElevation ? "#2196F3" : "#f0f0f0",
-              color: showElevation ? "white" : "#333",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              fontSize: "14px",
-            }}
-          >
-            Weather
-          </button>
+          <ActionButton
+            label="3D"
+            onClick={toggle2D3D}
+            className={`${
+              is3D
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
+          <ActionButton
+            activeLabel="Elevation ON"
+            inactiveLabel="Elevation OFF"
+            isActive={showElevation}
+            onClick={toggleElevation}
+            className={`${
+              showElevation
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
+          <ActionButton
+            activeLabel="Weather ON"
+            inactiveLabel="Weather OFF"
+            isActive={showWeather}
+            onClick={toggleWeather}
+            className={`${
+              showWeather
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
+          <ActionButton
+            activeLabel="PAR ON"
+            inactiveLabel="PAR OFF"
+            isActive={showPAR}
+            onClick={togglePAR}
+            className={`${
+              showPAR
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
+          <ActionButton
+            activeLabel="Wind ON"
+            inactiveLabel="Wind OFF"
+            // isActive={showPAR}
+            // onClick={togglePAR}
+            className={`${
+              showPAR
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
+          <ActionButton
+            activeLabel="Heat ON"
+            inactiveLabel="Heat OFF"
+            // isActive={showPAR}
+            // onClick={togglePAR}
+            className={`${
+              showPAR
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
+          <ActionButton
+            activeLabel="Rain ON"
+            inactiveLabel="Rain OFF"
+            // isActive={showPAR}
+            // onClick={togglePAR}
+            className={`${
+              showPAR
+                ? "bg-blue-500 text-white hover:text-white"
+                : "bg-gray-100 text-gray-800 hover:text-gray-800"
+            }`}
+          />
+
           {selectedBarangay && (
-            <button
+            <ActionButton
+              label="Reset"
               onClick={resetSelection}
-              style={{
-                padding: "10px 20px",
-                border: "none",
-                borderRadius: "6px",
-                backgroundColor: "#4CAF50",
-                color: "white",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                fontSize: "14px",
-              }}
-            >
-              Reset
-            </button>
+              className="py-2.5 px-5 rounded-md border-0 bg-red-500 text-white font-semibold cursor-pointer transition-all duration-300 ease-in-out text-[14px]"
+            />
           )}
         </div>
 
-        {/* Weather Modal - Inside Map on Right Side */}
-        {showModal && (
-          <div
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "20px",
-              bottom: "20px",
-              width: "380px",
-              backgroundColor: "white",
-              borderRadius: "12px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-              overflowY: "auto",
-              padding: "24px",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px",
-              }}
-            >
-              <h2 style={{ margin: 0, fontSize: "24px", color: "#333" }}>
-                {weatherData?.barangay || "Loading..."}
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{
-                  border: "none",
-                  background: "none",
-                  fontSize: "28px",
-                  cursor: "pointer",
-                  color: "#666",
-                  padding: "0",
-                  width: "30px",
-                  height: "30px",
-                  lineHeight: "30px",
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {loadingWeather ? (
-              <div style={{ textAlign: "center", padding: "20px" }}>
-                <div
-                  style={{
-                    border: "4px solid #f3f3f3",
-                    borderTop: "4px solid #3498db",
-                    borderRadius: "50%",
-                    width: "40px",
-                    height: "40px",
-                    animation: "spin 1s linear infinite",
-                    margin: "0 auto",
-                  }}
-                ></div>
-                <p style={{ marginTop: "10px", color: "#666" }}>
-                  Loading weather data...
-                </p>
-              </div>
-            ) : weatherData?.error ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "#e74c3c",
-                }}
-              >
-                <p>{weatherData.error}</p>
-              </div>
-            ) : weatherData ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                    padding: "16px",
-                    backgroundColor: "#f8f9fa",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        color: "#666",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Temperature
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "32px",
-                        fontWeight: "bold",
-                        color: "#FF6B6B",
-                      }}
-                    >
-                      {weatherData.temperature}°C
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        color: "#666",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Humidity
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "32px",
-                        fontWeight: "bold",
-                        color: "#4ECDC4",
-                      }}
-                    >
-                      {weatherData.humidity}%
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "12px",
-                      backgroundColor: "#e3f2fd",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Wind Speed
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: "600",
-                        color: "#2196F3",
-                      }}
-                    >
-                      {weatherData.windSpeed} km/h
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      padding: "12px",
-                      backgroundColor: "#e8f5e9",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Precipitation
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: "600",
-                        color: "#4CAF50",
-                      }}
-                    >
-                      {weatherData.precipitation} mm
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr",
-                    gap: "16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "12px",
-                      backgroundColor: "#fce4ec",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Elevation
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: "600",
-                        color: "#E91E63",
-                      }}
-                    >
-                      {weatherData.elevation.toFixed(2)} meters
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    padding: "16px",
-                    backgroundColor: "#fff3e0",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#666",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Weather Condition
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "600",
-                      color: "#FF9800",
-                    }}
-                  >
-                    {getWeatherDescription(weatherData.weatherCode)}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#999",
-                    textAlign: "center",
-                    marginTop: "8px",
-                  }}
-                >
-                  Data from Open-Meteo API • Asia/Manila timezone
-                </div>
-              </div>
-            ) : null}
-          </div>
+        {/* Elevation Modal */}
+        {showElevation && (
+          <ElevationInfoModal
+            visible={showModal}
+            onClose={() => setShowModal(false)}
+            elevationData={elevationData}
+          />
         )}
 
-        <div
-          ref={mapContainer}
-          style={{ width: "100%", height: "100%", borderRadius: "8px" }}
-        />
+        {/* Weather Modal */}
+        {showWeather && (
+          <WeatherInfoModal
+            visible={showModal}
+            onClose={() => setShowModal(false)}
+            weatherData={weatherData}
+            loading={loadingWeather}
+            getWeatherDescription={getWeatherDescription}
+          />
+        )}
+
+        <div ref={mapContainer} className="w-full h-full rounded-lg" />
       </div>
 
       <style>
