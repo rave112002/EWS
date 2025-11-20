@@ -53,6 +53,13 @@ export const MODULES = [
         link: "/admin/weather/weatherv1",
         element: <Weather />,
       },
+      {
+        value: "weatherV2",
+        label: "WeatherV2",
+        icon: <CloudOutlined />,
+        link: "/admin/weather/weatherv2",
+        element: <Weather />,
+      },
     ],
   },
 ];
