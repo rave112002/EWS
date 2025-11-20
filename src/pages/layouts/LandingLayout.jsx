@@ -41,27 +41,19 @@ const LandingLayout = () => {
   return (
     <Layout className="h-screen">
       <Sider
-        width={300}
+        width={250}
+        collapsible
         className=" bg-white h-full w-full overflow-auto border-r border-black/20 z-10"
       >
-        <div className="flex flex-col  items-center">
+        <div className="flex flex-col w-full items-center">
           <div className=" text-center h-60 w-60 rounded-2xl justify-center items-center flex my-4">
             <img src={ewsTransparent} alt="logo" className="w-full" />
           </div>
-
-          {/* <Menu
-              defaultSelectedKeys={[selectedKey]}
-              // selectedKeys={[selectedKey]}
-              mode="inline"
-              inlineCollapsed={false}
-              items={items}
-            /> */}
 
           <Menu
             defaultSelectedKeys={["1"]}
             defaultOpenKeys={["sub1"]}
             mode="inline"
-            // theme="dark"
             inlineCollapsed={false}
             items={menuItems}
             className="p-0"

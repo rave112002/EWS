@@ -38,11 +38,19 @@ export const MODULES = [
         link: "/admin/maps/mapv2",
         element: <Mapv2 />,
       },
+    ],
+  },
+  {
+    type: "group",
+    icon: <GlobalOutlined />,
+    value: "weather",
+    label: "Weather",
+    children: [
       {
-        value: "weather",
-        label: "Weather",
+        value: "weatherV1",
+        label: "WeatherV1",
         icon: <CloudOutlined />,
-        link: "/admin/maps/weather",
+        link: "/admin/weather/weatherv1",
         element: <Weather />,
       },
     ],
