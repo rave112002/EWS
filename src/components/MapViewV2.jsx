@@ -1,11 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { WEATHER_CODES } from "../constants/weatherCode";
 import { BARANGAY_COLORS } from "../constants/mapColors";
 import ActionButton from "./Button/ActionButton";
 import WeatherInfoModal from "./Modal/WeatherInfoModal";
 import ElevationInfoModal from "./Modal/ElevationInfoModal";
+import HeatIndexInfoModal from "./Modal/HeatIndexInfoModal";
+import { HEAT_LEVELS } from "../constants/warningLevels";
+import WarningLegend from "./WarningLegend";
+import { getWeatherDescription } from "@helpers/weatherHelpers";
+import { getHeatIndexCategory } from "../helpers/heatIndexHelpers";
+import MapButtons from "./MapButtons";
 
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
@@ -20,14 +25,15 @@ const MapViewV2 = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [elevationData, setElevationData] = useState(null);
   const [heatIndexData, setHeatIndexData] = useState(null);
-  const [loadingWeather, setLoadingWeather] = useState(false);
+  const [loading, setLoading] = useState(false);
   const elevationCacheRef = useRef({});
+  const heatIndexCacheRef = useRef({});
+  const parBoundsRef = useRef(null);
+  const heatmapPointsRef = useRef([]);
+  const defaultBoundsRef = useRef(null);
   const showElevationRef = useRef(false);
   const showWeatherRef = useRef(false);
   const showHeatIndexRef = useRef(false);
-  const heatIndexCacheRef = useRef({});
-  const parBoundsRef = useRef(null);
-  const defaultBoundsRef = useRef(null);
 
   const toggle2D3D = () => {
     if (!map.current) return;
@@ -49,86 +55,6 @@ const MapViewV2 = () => {
       });
       setIs3D(true);
     }
-  };
-
-  const resetSelection = () => {
-    if (!map.current) return;
-
-    setSelectedBarangay(null);
-    setShowModal(false);
-    setWeatherData(null);
-    setElevationData(null);
-    setHeatIndexData(null);
-
-    if (showElevation || showWeather || showHeatIndex) {
-      // Reset to original elevation heights
-      const elevationCache = elevationCacheRef.current;
-      map.current.setPaintProperty(
-        "combined-fill-3d",
-        "fill-extrusion-height",
-        [
-          "match",
-          ["get", "adm4_psgc"],
-          ...Object.entries(elevationCache).flatMap(([psgc, elevation]) => [
-            parseInt(psgc),
-            elevation * 15,
-          ]),
-          150,
-        ]
-      );
-      // Enable colors
-      if (showHeatIndex) {
-        // Restore heat index colors
-        const heatIndexCache = heatIndexCacheRef.current;
-        map.current.setPaintProperty(
-          "combined-fill-3d",
-          "fill-extrusion-color",
-          [
-            "match",
-            ["get", "adm4_psgc"],
-            ...Object.entries(heatIndexCache).flatMap(([psgc, data]) => [
-              parseInt(psgc),
-              data.color,
-            ]),
-            "#FFFF00",
-          ]
-        );
-      } else {
-        map.current.setPaintProperty(
-          "combined-fill-3d",
-          "fill-extrusion-color",
-          [
-            "match",
-            ["get", "adm4_psgc"],
-            ...Object.entries(BARANGAY_COLORS).flatMap(([psgc, color]) => [
-              parseInt(psgc),
-              color,
-            ]),
-            "#8AFF8A", // default color
-          ]
-        );
-      }
-    } else {
-      // Reset to flat uniform height
-      map.current.setPaintProperty(
-        "combined-fill-3d",
-        "fill-extrusion-height",
-        150
-      );
-      // Set to default color
-      map.current.setPaintProperty(
-        "combined-fill-3d",
-        "fill-extrusion-color",
-        "#8AFF8A"
-      );
-    }
-
-    // Reset opacity
-    map.current.setPaintProperty(
-      "combined-fill-3d",
-      "fill-extrusion-opacity",
-      0.5
-    );
   };
 
   const toggleElevation = () => {
@@ -240,15 +166,11 @@ const MapViewV2 = () => {
         ]
       );
       // Enable colors
-      map.current.setPaintProperty("combined-fill-3d", "fill-extrusion-color", [
-        "match",
-        ["get", "adm4_psgc"],
-        ...Object.entries(BARANGAY_COLORS).flatMap(([psgc, color]) => [
-          parseInt(psgc),
-          color,
-        ]),
-        "#8AFF8A",
-      ]);
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#89cff0"
+      );
     } else {
       // Show uniform flat height
       map.current.setPaintProperty(
@@ -353,95 +275,14 @@ const MapViewV2 = () => {
     setHeatIndexData(null);
 
     if (newShowHeatIndex) {
-      // Fetch heat index data for all barangays IN PARALLEL
-      setLoadingWeather(true);
-      const heatIndexCache = {};
-      const heatmapPoints = [];
+      // Use cached data if available
+      const heatIndexCache = heatIndexCacheRef.current;
+      const heatmapPoints = heatmapPointsRef.current;
 
-      const geojsonResponse = await fetch("/data/taguig.geojson");
-      const geojson = await geojsonResponse.json();
-
-      // Create array of promises for parallel execution
-      const fetchPromises = geojson.features.map(async (feature) => {
-        let coords = [];
-        if (feature.geometry.type === "Polygon") {
-          coords = feature.geometry.coordinates[0];
-        } else if (feature.geometry.type === "MultiPolygon") {
-          coords = feature.geometry.coordinates[0][0];
-        }
-
-        let lonSum = 0,
-          latSum = 0;
-        coords.forEach(([lon, lat]) => {
-          lonSum += lon;
-          latSum += lat;
-        });
-        const centroidLon = lonSum / coords.length;
-        const centroidLat = latSum / coords.length;
-
-        try {
-          const response = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${centroidLat}&longitude=${centroidLon}&current=temperature_2m,relative_humidity_2m,apparent_temperature&timezone=Asia/Manila`
-          );
-          const data = await response.json();
-          const apparentTemp = data.current.apparent_temperature;
-          const category = getHeatIndexCategory(apparentTemp);
-
-          // Normalize temperature to 0-1 range (assuming 20-45°C range)
-          const intensity = Math.max(0, Math.min(1, (apparentTemp - 20) / 25));
-
-          return {
-            psgc: feature.properties.adm4_psgc,
-            heatIndexData: {
-              apparentTemp,
-              color: category.color,
-              level: category.level,
-            },
-            heatmapPoint: {
-              type: "Feature",
-              properties: {
-                intensity: intensity,
-              },
-              geometry: {
-                type: "Point",
-                coordinates: [centroidLon, centroidLat],
-              },
-            },
-          };
-        } catch (error) {
-          console.error("Error fetching heat index data:", error);
-          return {
-            psgc: feature.properties.adm4_psgc,
-            heatIndexData: {
-              apparentTemp: 25,
-              color: "#FFFF00",
-              level: 1,
-            },
-            heatmapPoint: {
-              type: "Feature",
-              properties: {
-                intensity: 0.2,
-              },
-              geometry: {
-                type: "Point",
-                coordinates: [centroidLon, centroidLat],
-              },
-            },
-          };
-        }
-      });
-
-      // Wait for all promises to resolve in parallel
-      const results = await Promise.all(fetchPromises);
-
-      // Process results
-      results.forEach((result) => {
-        heatIndexCache[result.psgc] = result.heatIndexData;
-        heatmapPoints.push(result.heatmapPoint);
-      });
-
-      heatIndexCacheRef.current = heatIndexCache;
-      setLoadingWeather(false);
+      // Only fetch if cache is empty
+      if (Object.keys(heatIndexCache).length === 0) {
+        setLoading(true);
+      }
 
       // Update or create heatmap source
       if (map.current.getSource("heat-index-points")) {
@@ -591,8 +432,95 @@ const MapViewV2 = () => {
     }
   };
 
+  const resetSelection = () => {
+    if (!map.current) return;
+
+    setSelectedBarangay(null);
+    setShowModal(false);
+    setWeatherData(null);
+    setElevationData(null);
+    setHeatIndexData(null);
+
+    if (showElevation || showWeather || showHeatIndex) {
+      // Reset to original elevation heights
+      const elevationCache = elevationCacheRef.current;
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        [
+          "match",
+          ["get", "adm4_psgc"],
+          ...Object.entries(elevationCache).flatMap(([psgc, elevation]) => [
+            parseInt(psgc),
+            elevation * 15,
+          ]),
+          150,
+        ]
+      );
+      // Enable colors
+      if (showHeatIndex) {
+        // Restore heat index colors
+        const heatIndexCache = heatIndexCacheRef.current;
+        map.current.setPaintProperty(
+          "combined-fill-3d",
+          "fill-extrusion-color",
+          [
+            "match",
+            ["get", "adm4_psgc"],
+            ...Object.entries(heatIndexCache).flatMap(([psgc, data]) => [
+              parseInt(psgc),
+              data.color,
+            ]),
+            "#FFFF00",
+          ]
+        );
+      } else if (showWeather) {
+        // Reset weather mode to all sky blue
+        map.current.setPaintProperty(
+          "combined-fill-3d",
+          "fill-extrusion-color",
+          "#89cff0"
+        );
+      } else {
+        map.current.setPaintProperty(
+          "combined-fill-3d",
+          "fill-extrusion-color",
+          [
+            "match",
+            ["get", "adm4_psgc"],
+            ...Object.entries(BARANGAY_COLORS).flatMap(([psgc, color]) => [
+              parseInt(psgc),
+              color,
+            ]),
+            "#8AFF8A", // default color
+          ]
+        );
+      }
+    } else {
+      // Reset to flat uniform height
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        150
+      );
+      // Set to default color
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#8AFF8A"
+      );
+    }
+
+    // Reset opacity
+    map.current.setPaintProperty(
+      "combined-fill-3d",
+      "fill-extrusion-opacity",
+      0.5
+    );
+  };
+
   const fetchWeatherData = async (lat, lon, barangayName, psgc) => {
-    setLoadingWeather(true);
+    setLoading(true);
     try {
       // Get elevation from cache
       const elevation = elevationCacheRef.current[psgc] || 0;
@@ -649,24 +577,8 @@ const MapViewV2 = () => {
         });
       }
     } finally {
-      setLoadingWeather(false);
+      setLoading(false);
     }
-  };
-
-  const getWeatherDescription = (code) => {
-    return WEATHER_CODES[code] || "Unknown";
-  };
-
-  const getHeatIndexCategory = (apparentTempC) => {
-    if (apparentTempC < 27)
-      return { category: "Caution", color: "#FFFF00", level: 1 };
-    if (apparentTempC < 32)
-      return { category: "Extreme Caution", color: "#FFA500", level: 2 };
-    if (apparentTempC < 41)
-      return { category: "Danger", color: "#FF4500", level: 3 };
-    if (apparentTempC < 54)
-      return { category: "Extreme Danger", color: "#8B0000", level: 4 };
-    return { category: "Extreme Danger", color: "#8B0000", level: 4 };
   };
 
   useEffect(() => {
@@ -763,17 +675,6 @@ const MapViewV2 = () => {
       });
 
       map.current.addLayer({
-        id: "par-fill",
-        type: "fill",
-        source: "parBoundary",
-        maxzoom: 8,
-        paint: {
-          "fill-color": "#0066FF",
-          "fill-opacity": 0.15,
-        },
-      });
-
-      map.current.addLayer({
         id: "par-border",
         type: "line",
         source: "parBoundary",
@@ -829,6 +730,96 @@ const MapViewV2 = () => {
       await fetchAllElevations();
 
       elevationCacheRef.current = elevationCache;
+
+      const fetchAllHeatIndex = async () => {
+        const heatIndexCache = {};
+        const heatmapPoints = [];
+
+        const promises = combinedGeoJSON.features.map(async (feature) => {
+          let coords = [];
+          if (feature.geometry.type === "Polygon") {
+            coords = feature.geometry.coordinates[0];
+          } else if (feature.geometry.type === "MultiPolygon") {
+            coords = feature.geometry.coordinates[0][0];
+          }
+
+          let lonSum = 0,
+            latSum = 0;
+          coords.forEach(([lon, lat]) => {
+            lonSum += lon;
+            latSum += lat;
+          });
+          const centroidLon = lonSum / coords.length;
+          const centroidLat = latSum / coords.length;
+
+          try {
+            const response = await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${centroidLat}&longitude=${centroidLon}&current=temperature_2m,relative_humidity_2m,apparent_temperature&timezone=Asia/Manila`
+            );
+            const data = await response.json();
+            const apparentTemp = data.current.apparent_temperature;
+            const category = getHeatIndexCategory(apparentTemp);
+
+            // Normalize temperature to 0-1 range (assuming 20-45°C range)
+            const intensity = Math.max(
+              0,
+              Math.min(1, (apparentTemp - 20) / 25)
+            );
+
+            return {
+              psgc: feature.properties.adm4_psgc,
+              heatIndexData: {
+                apparentTemp,
+                color: category.color,
+                level: category.level,
+              },
+              heatmapPoint: {
+                type: "Feature",
+                properties: {
+                  intensity: intensity,
+                },
+                geometry: {
+                  type: "Point",
+                  coordinates: [centroidLon, centroidLat],
+                },
+              },
+            };
+          } catch (error) {
+            console.error("Error fetching heat index data:", error);
+            return {
+              psgc: feature.properties.adm4_psgc,
+              heatIndexData: {
+                apparentTemp: 25,
+                color: "#FFFF00",
+                level: 1,
+              },
+              heatmapPoint: {
+                type: "Feature",
+                properties: {
+                  intensity: 0.2,
+                },
+                geometry: {
+                  type: "Point",
+                  coordinates: [centroidLon, centroidLat],
+                },
+              },
+            };
+          }
+        });
+
+        const results = await Promise.all(promises);
+
+        results.forEach((result) => {
+          heatIndexCache[result.psgc] = result.heatIndexData;
+          heatmapPoints.push(result.heatmapPoint);
+        });
+
+        return { heatIndexCache, heatmapPoints };
+      };
+
+      const { heatIndexCache, heatmapPoints } = await fetchAllHeatIndex();
+      heatIndexCacheRef.current = heatIndexCache;
+      heatmapPointsRef.current = heatmapPoints;
 
       map.current.addLayer({
         id: "combined-fill-3d",
@@ -921,7 +912,7 @@ const MapViewV2 = () => {
           }
 
           // Update color based on selection
-          if (isElevationOn || isWeatherOn) {
+          if (isElevationOn) {
             // When elevation or weather is ON, keep the colorful scheme but highlight selected
             map.current.setPaintProperty(
               "combined-fill-3d",
@@ -961,6 +952,17 @@ const MapViewV2 = () => {
                   data.color,
                 ]),
                 "#FFFF00",
+              ]
+            );
+          } else if (isWeatherOn) {
+            map.current.setPaintProperty(
+              "combined-fill-3d",
+              "fill-extrusion-color",
+              [
+                "case",
+                ["==", ["get", "adm4_psgc"], clickedPsgc],
+                "#0000FF", // Blue for clicked/selected barangay
+                "#89cff0", // Sky blue for all other barangays
               ]
             );
           } else {
@@ -1092,96 +1094,20 @@ const MapViewV2 = () => {
   return (
     <div className="relative w-full h-[88vh]">
       <div className="relative w-full h-full">
-        <div className="absolute z-1000 flex gap-2.5 bg-white rounded-lg p-2.5 shadow-md top-2.5 left-2.5">
-          <ActionButton
-            label="2D"
-            onClick={toggle2D3D}
-            className={`${
-              !is3D
-                ? "bg-blue-500 text-white hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:text-gray-800"
-            }`}
-          />
-
-          <ActionButton
-            label="3D"
-            onClick={toggle2D3D}
-            className={`${
-              is3D
-                ? "bg-blue-500 text-white hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:text-gray-800"
-            }`}
-          />
-
-          <ActionButton
-            activeLabel="Elevation ON"
-            inactiveLabel="Elevation OFF"
-            isActive={showElevation}
-            onClick={toggleElevation}
-            className={`${
-              showElevation
-                ? "bg-blue-500 text-white hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:text-gray-800"
-            }`}
-          />
-
-          <ActionButton
-            activeLabel="Weather ON"
-            inactiveLabel="Weather OFF"
-            isActive={showWeather}
-            onClick={toggleWeather}
-            className={`${
-              showWeather
-                ? "bg-blue-500 text-white hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:text-gray-800"
-            }`}
-          />
-
-          <ActionButton
-            activeLabel="PAR ON"
-            inactiveLabel="PAR OFF"
-            isActive={showPAR}
-            onClick={togglePAR}
-            className={`${
-              showPAR
-                ? "bg-blue-500 text-white hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:text-gray-800"
-            }`}
-          />
-
-          <ActionButton
-            activeLabel="Wind ON"
-            inactiveLabel="Wind OFF"
-            className="bg-gray-100 text-gray-800 hover:text-gray-800"
-          />
-
-          <ActionButton
-            activeLabel="Heat Index ON"
-            inactiveLabel="Heat Index OFF"
-            isActive={showHeatIndex}
-            onClick={toggleHeatIndex}
-            className={`${
-              showHeatIndex
-                ? "bg-blue-500 text-white hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:text-gray-800"
-            }`}
-          />
-
-          <ActionButton
-            activeLabel="Rain ON"
-            inactiveLabel="Rain OFF"
-            className="bg-gray-100 text-gray-800 hover:text-gray-800"
-          />
-
-          {selectedBarangay && (
-            <ActionButton
-              label="Reset"
-              onClick={resetSelection}
-              className="py-2.5 px-5 rounded-md border-0 bg-red-500 text-white font-semibold cursor-pointer transition-all duration-300 ease-in-out text-[14px]"
-            />
-          )}
-        </div>
-
+        <MapButtons
+          is3D={is3D}
+          showElevation={showElevation}
+          showWeather={showWeather}
+          showPAR={showPAR}
+          showHeatIndex={showHeatIndex}
+          selectedBarangay={selectedBarangay}
+          onToggle2D3D={toggle2D3D}
+          onToggleElevation={toggleElevation}
+          onToggleWeather={toggleWeather}
+          onTogglePAR={togglePAR}
+          onToggleHeatIndex={toggleHeatIndex}
+          onReset={resetSelection}
+        />
         {/* Elevation Modal */}
         {showElevation && (
           <ElevationInfoModal
@@ -1197,139 +1123,28 @@ const MapViewV2 = () => {
             visible={showModal}
             onClose={() => setShowModal(false)}
             weatherData={weatherData}
-            loading={loadingWeather}
+            loading={loading}
             getWeatherDescription={getWeatherDescription}
           />
         )}
 
         {/* Heat Index Modal */}
         {showHeatIndex && (
-          <div
-            className={`absolute top-20 right-2.5 bg-white rounded-lg shadow-lg p-5 w-80 transition-all duration-300 z-50 ${
-              showModal
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-full pointer-events-none"
-            }`}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800">
-                Heat Index Info
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-
-            {loadingWeather ? (
-              <div className="flex justify-center items-center py-8">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : heatIndexData ? (
-              heatIndexData.error ? (
-                <div className="text-red-500">{heatIndexData.error}</div>
-              ) : (
-                <div>
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-gray-700 mb-2">
-                      {heatIndexData.barangay}
-                    </h4>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                      <span className="text-gray-600">Temperature:</span>
-                      <span className="font-semibold text-gray-800">
-                        {heatIndexData.temperature.toFixed(1)}°C
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                      <span className="text-gray-600">Humidity:</span>
-                      <span className="font-semibold text-gray-800">
-                        {heatIndexData.humidity}%
-                      </span>
-                    </div>
-
-                    <div
-                      className="flex justify-between items-center p-3 rounded"
-                      style={{ backgroundColor: heatIndexData.color + "40" }}
-                    >
-                      <span className="text-gray-600">Apparent Temp:</span>
-                      <span className="font-bold text-gray-800">
-                        {heatIndexData.apparentTemperature.toFixed(1)}°C
-                      </span>
-                    </div>
-
-                    <div
-                      className="p-3 rounded text-center font-semibold"
-                      style={{
-                        backgroundColor: heatIndexData.color,
-                        color:
-                          heatIndexData.color === "#FFFF00" ? "#000" : "#fff",
-                      }}
-                    >
-                      {heatIndexData.category}
-                    </div>
-
-                    <div className="text-xs text-gray-500 mt-4">
-                      <p className="font-semibold mb-1">
-                        Heat Index Categories:
-                      </p>
-                      <p>🟡 &lt;27°C: Caution</p>
-                      <p>🟠 27-32°C: Extreme Caution</p>
-                      <p>🔴 32-41°C: Danger</p>
-                      <p>🔴 &gt;41°C: Extreme Danger</p>
-                    </div>
-                  </div>
-                </div>
-              )
-            ) : (
-              <div className="text-gray-500 text-center py-4">
-                Click on a barangay to view heat index data
-              </div>
-            )}
-          </div>
+          <HeatIndexInfoModal
+            visible={showModal}
+            onClose={() => setShowModal(false)}
+            heatIndexData={heatIndexData}
+            loading={loading}
+          />
         )}
 
         {/* Heat Index Legend */}
         {showHeatIndex && (
-          <div className="absolute bottom-24 left-2.5 bg-white rounded-lg shadow-lg p-4 z-40">
+          <div className="absolute bottom-2.5 left-2.5 bg-white rounded-lg shadow-lg p-4 z-40">
             <h4 className="text-sm font-bold text-gray-800 mb-2">
               Heat Index Scale
             </h4>
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-6 h-4 rounded"
-                  style={{ backgroundColor: "#FFFF00" }}
-                ></div>
-                <span>Caution</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-6 h-4 rounded"
-                  style={{ backgroundColor: "#FFA500" }}
-                ></div>
-                <span>Extreme Caution</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-6 h-4 rounded"
-                  style={{ backgroundColor: "#FF4500" }}
-                ></div>
-                <span>Danger</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-6 h-4 rounded"
-                  style={{ backgroundColor: "#8B0000" }}
-                ></div>
-                <span>Extreme Danger</span>
-              </div>
-            </div>
+            <WarningLegend data={HEAT_LEVELS} />
           </div>
         )}
 
