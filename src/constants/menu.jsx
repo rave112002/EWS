@@ -8,6 +8,7 @@ import Map from "@pages/Map";
 import Mapv2 from "@pages/Mapv2";
 import NotFound from "@pages/NotFound";
 import Weather from "@pages/Weather";
+import WeatherV2 from "@pages/WeatherV2";
 
 export const MODULES = [
   {
@@ -58,7 +59,7 @@ export const MODULES = [
         label: "WeatherV2",
         icon: <CloudOutlined />,
         link: "/admin/weather/weatherv2",
-        element: <Weather />,
+        element: <WeatherV2 />,
       },
     ],
   },

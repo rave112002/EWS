@@ -50,6 +50,8 @@ const Routers = () => {
 
       {/* Catch-all 404 with redirect */}
       <Route path="*" element={<NotFound />} />
+
+      <Route><Route element-/></Route>
     </Routes>
   );
 };
