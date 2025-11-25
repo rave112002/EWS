@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { BARANGAY_COLORS } from "../constants/mapColors";
-import ActionButton from "./Button/ActionButton";
 import WeatherInfoModal from "./Modal/WeatherInfoModal";
 import ElevationInfoModal from "./Modal/ElevationInfoModal";
 import HeatIndexInfoModal from "./Modal/HeatIndexInfoModal";
@@ -11,21 +10,147 @@ import WarningLegend from "./WarningLegend";
 import { getWeatherDescription } from "@helpers/weatherHelpers";
 import { getHeatIndexCategory } from "../helpers/heatIndexHelpers";
 import MapButtons from "./MapButtons";
+import { getRainEffectType } from "@helpers/rainHelpers";
+import RainInfoModal from "./Modal/RainInfoModal";
+import { fetchElevationData } from "@hooks/useElevation";
+import { fetchHeatIndexData } from "@hooks/useHeatIndex";
+import { fetchWeatherData } from "@hooks/useWeather";
+import { fetchRainData } from "@hooks/useRain";
+
+// Rain Effect Component
+const RainEffect = ({ intensity = "moderate" }) => {
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const dropCounts = {
+      light: 100,
+      moderate: 250,
+      heavy: 400,
+    };
+    const dropCount = dropCounts[intensity] || 250;
+
+    class Raindrop {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height - canvas.height;
+        this.length = Math.random() * 20 + 10;
+        this.speed = Math.random() * 3 + 4;
+        this.opacity = Math.random() * 0.3 + 0.3;
+      }
+
+      update() {
+        this.y += this.speed;
+        if (this.y > canvas.height) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        ctx.strokeStyle = `rgba(174, 194, 224, ${this.opacity})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x, this.y + this.length);
+        ctx.stroke();
+      }
+    }
+
+    const drops = Array.from({ length: dropCount }, () => new Raindrop());
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drops.forEach((drop) => {
+        drop.update();
+        drop.draw();
+      });
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [intensity]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none z-50"
+      style={{ opacity: 0.7 }}
+    />
+  );
+};
+
+// Thunder Effect Component
+const ThunderEffect = () => {
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    const triggerFlash = () => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 100);
+
+      const nextFlash = Math.random() * 5000 + 3000;
+      setTimeout(triggerFlash, nextFlash);
+    };
+
+    const initialDelay = setTimeout(triggerFlash, Math.random() * 3000 + 1000);
+
+    return () => clearTimeout(initialDelay);
+  }, []);
+
+  return (
+    <div
+      className={`absolute inset-0 pointer-events-none z-50 transition-opacity duration-100 ${
+        flash ? "opacity-30" : "opacity-0"
+      }`}
+      style={{ backgroundColor: "#FFFFFF" }}
+    />
+  );
+};
 
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const [is3D, setIs3D] = useState(false);
   const [selectedBarangay, setSelectedBarangay] = useState(null);
+  const [is3D, setIs3D] = useState(false);
+
   const [showElevation, setShowElevation] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const [showPAR, setShowPAR] = useState(false);
   const [showHeatIndex, setShowHeatIndex] = useState(false);
+  const [showRain, setShowRain] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
   const [weatherData, setWeatherData] = useState(null);
   const [elevationData, setElevationData] = useState(null);
   const [heatIndexData, setHeatIndexData] = useState(null);
+  const [rainData, setRainData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [tropicalCyclones, setTropicalCyclones] = useState([]);
   const elevationCacheRef = useRef({});
   const heatIndexCacheRef = useRef({});
   const parBoundsRef = useRef(null);
@@ -34,7 +159,49 @@ const MapViewV2 = () => {
   const showElevationRef = useRef(false);
   const showWeatherRef = useRef(false);
   const showHeatIndexRef = useRef(false);
+  const showRainRef = useRef(false);
+  const cycloneMarkersRef = useRef([]);
 
+  // Data fetching based on selected mode
+  const fetchSelectedData = async (lat, lon, barangayName, psgc) => {
+    setLoading(true);
+
+    try {
+      if (showWeatherRef.current) {
+        const result = await fetchWeatherData(lat, lon, barangayName);
+        setWeatherData(result);
+      } else if (showElevationRef.current) {
+        const result = await fetchElevationData(
+          barangayName,
+          psgc,
+          elevationCacheRef
+        );
+        setElevationData(result);
+      } else if (showHeatIndexRef.current) {
+        const result = await fetchHeatIndexData(
+          lat,
+          lon,
+          barangayName,
+          getHeatIndexCategory
+        );
+        setHeatIndexData(result);
+      } else if (showRainRef.current) {
+        const result = await fetchRainData(
+          lat,
+          lon,
+          barangayName,
+          getWeatherDescription
+        );
+        setRainData(result);
+      }
+    } catch (error) {
+      console.error("Error fetching:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Toggles
   const toggle2D3D = () => {
     if (!map.current) return;
 
@@ -193,7 +360,7 @@ const MapViewV2 = () => {
     );
   };
 
-  const togglePAR = () => {
+  const togglePAR = async () => {
     if (!map.current) return;
 
     const newShowPAR = !showPAR;
@@ -216,6 +383,44 @@ const MapViewV2 = () => {
     }
 
     if (newShowPAR) {
+      // Fetch tropical cyclones
+      const cyclones = await fetchTropicalCyclones();
+
+      // Remove existing markers
+      cycloneMarkersRef.current.forEach((marker) => marker.remove());
+      cycloneMarkersRef.current = [];
+
+      // Add cyclone markers to map
+      cyclones.forEach((cyclone) => {
+        const el = document.createElement("div");
+        el.className = "cyclone-marker";
+        el.innerHTML = cyclone.icon;
+        el.style.fontSize = "32px";
+        el.style.cursor = "pointer";
+        el.style.textShadow = "0 0 5px rgba(0,0,0,0.5)";
+
+        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
+          <div style="min-width: 200px;">
+            <h3 style="font-weight: bold; margin-bottom: 8px; color: #FF0000;">${
+              cyclone.category
+            }</h3>
+            <p style="margin-bottom: 4px;"><strong>Location:</strong> ${cyclone.lat.toFixed(
+              2
+            )}°, ${cyclone.lon.toFixed(2)}°</p>
+            <p style="margin-bottom: 4px;"><strong>Name:</strong> ${
+              cyclone.name
+            }</p>
+          </div>
+        `);
+
+        const marker = new maplibregl.Marker(el)
+          .setLngLat([cyclone.lon, cyclone.lat])
+          .setPopup(popup)
+          .addTo(map.current);
+
+        cycloneMarkersRef.current.push(marker);
+      });
+
       // Zoom out to PAR bounds
       if (parBoundsRef.current && !parBoundsRef.current.isEmpty()) {
         map.current.fitBounds(parBoundsRef.current, {
@@ -238,6 +443,10 @@ const MapViewV2 = () => {
         "#8AFF8A"
       );
     } else {
+      // Remove cyclone markers
+      cycloneMarkersRef.current.forEach((marker) => marker.remove());
+      cycloneMarkersRef.current = [];
+
       // Zoom back to default bounds
       if (defaultBoundsRef.current && !defaultBoundsRef.current.isEmpty()) {
         map.current.fitBounds(defaultBoundsRef.current, {
@@ -432,7 +641,71 @@ const MapViewV2 = () => {
     }
   };
 
-  const resetSelection = () => {
+  const toggleRain = () => {
+    if (!map.current) return;
+
+    const newShowRain = !showRain;
+    setShowRain(newShowRain);
+    showRainRef.current = newShowRain;
+    setShowElevation(false);
+    showElevationRef.current = false;
+    setShowWeather(false);
+    showWeatherRef.current = false;
+    setShowPAR(false);
+    setShowHeatIndex(false);
+    showHeatIndexRef.current = false;
+    setSelectedBarangay(null);
+    setShowModal(false);
+    setWeatherData(null);
+    setElevationData(null);
+    setHeatIndexData(null);
+    setRainData(null);
+
+    if (map.current.getLayer("heat-index-heatmap")) {
+      map.current.setLayoutProperty("heat-index-heatmap", "visibility", "none");
+    }
+
+    if (newShowRain) {
+      const elevationCache = elevationCacheRef.current;
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        [
+          "match",
+          ["get", "adm4_psgc"],
+          ...Object.entries(elevationCache).flatMap(([psgc, elevation]) => [
+            parseInt(psgc),
+            elevation * 15,
+          ]),
+          150,
+        ]
+      );
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#6B8E99"
+      );
+    } else {
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-height",
+        150
+      );
+      map.current.setPaintProperty(
+        "combined-fill-3d",
+        "fill-extrusion-color",
+        "#8AFF8A"
+      );
+    }
+
+    map.current.setPaintProperty(
+      "combined-fill-3d",
+      "fill-extrusion-opacity",
+      0.5
+    );
+  };
+
+  const onClickReset = () => {
     if (!map.current) return;
 
     setSelectedBarangay(null);
@@ -519,66 +792,192 @@ const MapViewV2 = () => {
     );
   };
 
-  const fetchWeatherData = async (lat, lon, barangayName, psgc) => {
-    setLoading(true);
+  // Helper function to check if coordinates are within PAR
+  // Helper function to check if coordinates are within PAR
+  const isWithinPAR = (lat, lon) => {
+    // Philippine Area of Responsibility (PAR) bounds
+    // These are approximate coordinates for PAR
+    const parBounds = {
+      north: 25,
+      south: 5,
+      east: 135,
+      west: 115,
+    };
+
+    return (
+      lat >= parBounds.south &&
+      lat <= parBounds.north &&
+      lon >= parBounds.west &&
+      lon <= parBounds.east
+    );
+  };
+
+  // Helper function to determine development stage
+  const getDevelopmentStage = (windSpeed) => {
+    if (windSpeed < 30) return { stage: "LPA", icon: "⚠️" };
+    if (windSpeed < 62) return { stage: "Tropical Depression", icon: "🌀" };
+    if (windSpeed < 88) return { stage: "Tropical Storm", icon: "🌀" };
+    if (windSpeed < 118) return { stage: "Severe Tropical Storm", icon: "🌀" };
+    if (windSpeed < 184) return { stage: "Typhoon", icon: "🌪️" };
+    return { stage: "Super Typhoon", icon: "🌪️" };
+  };
+
+  const fetchTropicalCyclones = async () => {
     try {
-      // Get elevation from cache
-      const elevation = elevationCacheRef.current[psgc] || 0;
+      const cyclones = [];
 
-      if (showWeatherRef.current) {
-        const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia/Manila`
-        );
-        const data = await response.json();
+      // Fetch from GDACS (for major cyclones)
+      try {
+        const gdacsResponse = await fetch("https://www.gdacs.org/xml/rss.xml");
+        const gdacsText = await gdacsResponse.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(gdacsText, "text/xml");
+        const items = xmlDoc.querySelectorAll("item");
 
-        setWeatherData({
-          barangay: barangayName,
-          temperature: data.current.temperature_2m,
-          humidity: data.current.relative_humidity_2m,
-          precipitation: data.current.precipitation,
-          windSpeed: data.current.wind_speed_10m,
-          weatherCode: data.current.weather_code,
-        });
-      } else if (showElevationRef.current) {
-        setElevationData({
-          barangay: barangayName,
-          elevation: elevation,
-        });
-      } else if (showHeatIndexRef.current) {
-        const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature&timezone=Asia/Manila`
-        );
-        const data = await response.json();
-        const temp = data.current.temperature_2m;
-        const humidity = data.current.relative_humidity_2m;
-        const apparentTemp = data.current.apparent_temperature;
-        const category = getHeatIndexCategory(apparentTemp);
+        items.forEach((item) => {
+          const title = item.querySelector("title")?.textContent || "";
 
-        setHeatIndexData({
-          barangay: barangayName,
-          temperature: temp,
-          humidity: humidity,
-          apparentTemperature: apparentTemp,
-          category: category.category,
-          color: category.color,
+          if (
+            title.toLowerCase().includes("tropical cyclone") ||
+            title.toLowerCase().includes("typhoon") ||
+            title.toLowerCase().includes("hurricane") ||
+            title.toLowerCase().includes("tropical storm") ||
+            title.toLowerCase().includes("tropical depression") ||
+            title.toLowerCase().includes("low pressure")
+          ) {
+            const description =
+              item.querySelector("description")?.textContent || "";
+            const link = item.querySelector("link")?.textContent || "";
+            const pointText = item.querySelector("point")?.textContent || "";
+
+            const coords = pointText.split(" ");
+            if (coords.length === 2) {
+              const lat = parseFloat(coords[0]);
+              const lon = parseFloat(coords[1]);
+
+              if (!isWithinPAR(lat, lon)) return;
+
+              const windSpeedMatch = description.match(
+                /wind speed[:\s]+(\d+)/i
+              );
+              const windSpeed = windSpeedMatch
+                ? parseInt(windSpeedMatch[1])
+                : 50;
+              const { stage, icon } = getDevelopmentStage(windSpeed);
+
+              const forecast = generateForecastTrack(lat, lon, windSpeed);
+
+              cyclones.push({
+                name: title,
+                lat,
+                lon,
+                category: stage,
+                icon,
+                windSpeed,
+                description,
+                link,
+                forecast,
+                source: "GDACS",
+              });
+            }
+          }
         });
+      } catch (gdacsError) {
+        console.error("GDACS fetch error:", gdacsError);
       }
+
+      // Fetch from Open-Meteo for additional weather systems and LPAs
+      try {
+        // Check multiple points within PAR for low pressure systems
+        const checkPoints = [
+          { lat: 15, lon: 120, name: "Western PAR" },
+          { lat: 15, lon: 125, name: "Central PAR" },
+          { lat: 15, lon: 130, name: "Eastern PAR" },
+          { lat: 10, lon: 125, name: "Southern PAR" },
+          { lat: 20, lon: 125, name: "Northern PAR" },
+        ];
+
+        for (const point of checkPoints) {
+          const response = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${point.lat}&longitude=${point.lon}&current=surface_pressure,wind_speed_10m,wind_direction_10m&timezone=Asia/Manila`
+          );
+          const data = await response.json();
+
+          // Detect low pressure areas (pressure < 1008 hPa with significant wind)
+          if (
+            data.current.surface_pressure < 1008 &&
+            data.current.wind_speed_10m > 15
+          ) {
+            const windSpeed = data.current.wind_speed_10m * 1.852; // Convert to km/h
+            const { stage, icon } = getDevelopmentStage(windSpeed);
+
+            // Check if we already have this system from GDACS
+            const isDuplicate = cyclones.some(
+              (c) =>
+                Math.abs(c.lat - point.lat) < 2 &&
+                Math.abs(c.lon - point.lon) < 2
+            );
+
+            if (!isDuplicate) {
+              const forecast = generateForecastTrack(
+                point.lat,
+                point.lon,
+                windSpeed
+              );
+
+              cyclones.push({
+                name: `${stage} detected in ${point.name}`,
+                lat: point.lat,
+                lon: point.lon,
+                category: stage,
+                icon,
+                windSpeed: Math.round(windSpeed),
+                description: `Pressure: ${
+                  data.current.surface_pressure
+                } hPa, Wind: ${Math.round(windSpeed)} km/h`,
+                link: "",
+                forecast,
+                source: "Weather Model",
+              });
+            }
+          }
+        }
+      } catch (weatherError) {
+        console.error("Weather model fetch error:", weatherError);
+      }
+
+      setTropicalCyclones(cyclones);
+      return cyclones;
     } catch (error) {
-      console.error("Error fetching weather:", error);
-      if (showWeatherRef.current) {
-        setWeatherData({
-          barangay: barangayName,
-          error: "Unable to fetch weather data",
-        });
-      } else if (showHeatIndexRef.current) {
-        setHeatIndexData({
-          barangay: barangayName,
-          error: "Unable to fetch heat index data",
-        });
-      }
-    } finally {
-      setLoading(false);
+      console.error("Error fetching tropical cyclones:", error);
+      return [];
     }
+  };
+
+  // Helper function to generate forecast track
+  const generateForecastTrack = (lat, lon, windSpeed) => {
+    const forecast = [];
+    const baseSpeed = 0.5;
+    const bearing = Math.random() * 60 - 30;
+
+    for (let day = 1; day <= 5; day++) {
+      const projectedLat =
+        lat + baseSpeed * day * Math.cos((bearing * Math.PI) / 180);
+      const projectedLon =
+        lon + baseSpeed * day * Math.sin((bearing * Math.PI) / 180);
+      const projectedWindSpeed = windSpeed + (Math.random() * 20 - 10) * day;
+      const projectedStage = getDevelopmentStage(projectedWindSpeed);
+
+      forecast.push({
+        day,
+        lat: projectedLat,
+        lon: projectedLon,
+        windSpeed: Math.round(projectedWindSpeed),
+        stage: projectedStage.stage,
+        icon: projectedStage.icon,
+      });
+    }
+    return forecast;
   };
 
   useEffect(() => {
@@ -600,7 +999,6 @@ const MapViewV2 = () => {
       const labelLayerId = layers.find(
         (layer) => layer.type === "symbol" && layer.layout["text-field"]
       )?.id;
-
       map.current.addLayer(
         {
           id: "3d-buildings",
@@ -893,14 +1291,15 @@ const MapViewV2 = () => {
           const isElevationOn = showElevationRef.current;
           const isWeatherOn = showWeatherRef.current;
           const isHeatIndexOn = showHeatIndexRef.current;
+          const isRainOn = showRainRef.current;
 
           // Fetch data and show modal only if a mode is on
-          if (isElevationOn || isWeatherOn || isHeatIndexOn) {
-            fetchWeatherData(centerLat, centerLon, barangayName, clickedPsgc);
+          if (isElevationOn || isWeatherOn || isHeatIndexOn || isRainOn) {
+            fetchSelectedData(centerLat, centerLon, barangayName, clickedPsgc);
             setShowModal(true);
           }
 
-          if (isElevationOn || isWeatherOn || isHeatIndexOn) {
+          if (isElevationOn || isWeatherOn || isHeatIndexOn || isRainOn) {
             map.current.easeTo({
               center: [centerLon, centerLat],
               zoom: 14,
@@ -1090,7 +1489,6 @@ const MapViewV2 = () => {
     map.current.dragRotate.enable();
     map.current.touchZoomRotate.enableRotation();
   }, [showElevation, showWeather, showHeatIndex]);
-
   return (
     <div className="relative w-full h-[88vh]">
       <div className="relative w-full h-full">
@@ -1100,13 +1498,15 @@ const MapViewV2 = () => {
           showWeather={showWeather}
           showPAR={showPAR}
           showHeatIndex={showHeatIndex}
+          showRain={showRain}
           selectedBarangay={selectedBarangay}
           onToggle2D3D={toggle2D3D}
           onToggleElevation={toggleElevation}
           onToggleWeather={toggleWeather}
           onTogglePAR={togglePAR}
           onToggleHeatIndex={toggleHeatIndex}
-          onReset={resetSelection}
+          onToggleRain={toggleRain}
+          onReset={onClickReset}
         />
         {/* Elevation Modal */}
         {showElevation && (
@@ -1116,7 +1516,6 @@ const MapViewV2 = () => {
             elevationData={elevationData}
           />
         )}
-
         {/* Weather Modal */}
         {showWeather && (
           <WeatherInfoModal
@@ -1148,19 +1547,65 @@ const MapViewV2 = () => {
           </div>
         )}
 
+        {/* Rain Modal */}
+        {showRain && (
+          <RainInfoModal
+            visible={showModal}
+            onClose={() => setShowModal(false)}
+            rainData={rainData}
+            loading={loading}
+          />
+        )}
+
+        {/* Rain and Thunder Effects */}
+        {showRain && rainData && getRainEffectType(rainData) && (
+          <>
+            <RainEffect intensity={getRainEffectType(rainData).intensity} />
+            {getRainEffectType(rainData).isThunderstorm && <ThunderEffect />}
+          </>
+        )}
+
+        {/* Tropical Cyclone Legend */}
+        {showPAR && tropicalCyclones.length > 0 && (
+          <div className="absolute top-2.5 left-2.5 bg-white rounded-lg shadow-lg p-4 z-40 max-w-xs">
+            <h4 className="text-sm font-bold text-gray-800 mb-2">
+              Active Tropical Cyclones
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: "24px" }}>🌪️</span>
+                <span className="text-xs">Super Typhoon / Typhoon</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: "24px" }}>🌀</span>
+                <span className="text-xs">Tropical Storm / Depression</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: "20px" }}>⚠️</span>
+                <span className="text-xs">Low Pressure Area</span>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-600">
+                {tropicalCyclones.length} active system
+                {tropicalCyclones.length !== 1 ? "s" : ""} detected
+              </p>
+            </div>
+          </div>
+        )}
+
         <div ref={mapContainer} className="w-full h-full rounded-lg" />
       </div>
 
       <style>
         {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}
       </style>
     </div>
   );
 };
-
 export default MapViewV2;

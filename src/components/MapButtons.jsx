@@ -14,6 +14,8 @@ const MapButtons = ({
   onTogglePAR,
   onToggleHeatIndex,
   onReset,
+  showRain,
+  onToggleRain,
 }) => {
   return (
     <div className="absolute z-1000 flex gap-2.5 bg-white rounded-lg p-2.5 shadow-md top-2.5 left-2.5">
@@ -94,7 +96,13 @@ const MapButtons = ({
       <ActionButton
         activeLabel="Rain ON"
         inactiveLabel="Rain OFF"
-        className="bg-gray-100 text-gray-800 hover:text-gray-800"
+        isActive={showRain}
+        onClick={onToggleRain}
+        className={`${
+          showRain
+            ? "bg-blue-500 text-white hover:text-white"
+            : "bg-gray-100 text-gray-800 hover:text-gray-800"
+        }`}
       />
 
       {selectedBarangay && (
