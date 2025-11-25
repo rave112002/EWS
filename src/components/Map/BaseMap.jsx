@@ -16,7 +16,7 @@ const BaseMap = ({
   useEffect(() => {
     if (mapInstance.current) return;
 
-    const styleUrl = MAP_STYLES[style] || MAP_STYLES["satellite"];
+    const styleUrl = MAP_STYLES[style] || MAP_STYLES["dark"];
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
@@ -77,8 +77,8 @@ const BaseMap = ({
               type: "fill",
               source: "taguig-boundary",
               paint: {
-                "fill-color": "#8AFF8A",
-                "fill-opacity": 0.4,
+                "fill-color": "#008000",
+                "fill-opacity": 0.3,
               },
             });
           }
