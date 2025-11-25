@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import LandingLayout from "@pages/layouts/LandingLayout";
 import Login from "@pages/Login";
-import Home from "@pages/Home";
+import Home from "@pages/Dashboard";
 import Map from "@pages/Map";
 import MapV2 from "@pages/Mapv2";
 import Weather from "@pages/Weather";

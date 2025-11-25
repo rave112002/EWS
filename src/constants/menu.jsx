@@ -3,7 +3,7 @@ import {
   CloudOutlined,
   GlobalOutlined,
 } from "@ant-design/icons";
-import Home from "@pages/Home";
+import Dashboard from "@pages/Dashboard";
 import Map from "@pages/Map";
 import Mapv2 from "@pages/Mapv2";
 import NotFound from "@pages/NotFound";
@@ -16,7 +16,7 @@ export const MODULES = [
     value: "dashboard",
     label: "Dashboard",
     link: "/admin/dashboard",
-    element: <Home />,
+    element: <Dashboard />,
   },
   {
     type: "group",
