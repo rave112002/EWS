@@ -135,9 +135,10 @@ const ThunderEffect = () => {
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const [selectedBarangay, setSelectedBarangay] = useState(null);
-  const [is3D, setIs3D] = useState(false);
 
+  const [selectedBarangay, setSelectedBarangay] = useState(null);
+
+  const [is3D, setIs3D] = useState(false);
   const [showElevation, setShowElevation] = useState(false);
   const [showWeather, setShowWeather] = useState(false);
   const [showPAR, setShowPAR] = useState(false);
@@ -149,6 +150,7 @@ const MapViewV2 = () => {
   const [elevationData, setElevationData] = useState(null);
   const [heatIndexData, setHeatIndexData] = useState(null);
   const [rainData, setRainData] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [tropicalCyclones, setTropicalCyclones] = useState([]);
   const elevationCacheRef = useRef({});
