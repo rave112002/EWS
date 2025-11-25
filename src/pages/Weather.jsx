@@ -212,7 +212,10 @@ const Weather = ({
         type: "raster",
         source: "clouds",
         paint: {
-          "raster-opacity": 0.6,
+          "raster-opacity": 1,
+          // "raster-brightness-min": 0.8, // Increase for lighter
+          // "raster-brightness-max": 1.2,
+          // "raster-contrast": 0.8, // Lower for softer look
         },
       });
 
