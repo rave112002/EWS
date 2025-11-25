@@ -3,11 +3,11 @@ import {
   CloudOutlined,
   GlobalOutlined,
 } from "@ant-design/icons";
-import Home from "@pages/Home";
+import Dashboard from "@pages/Dashboard";
 import Map from "@pages/Map";
 import Mapv2 from "@pages/Mapv2";
-import NotFound from "@pages/NotFound";
 import Weather from "@pages/Weather";
+import Precipitation from "@pages/Precipitation";
 
 export const MODULES = [
   {
@@ -16,7 +16,7 @@ export const MODULES = [
     value: "dashboard",
     label: "Dashboard",
     link: "/admin/dashboard",
-    element: <Home />,
+    element: <Dashboard />,
   },
   {
     type: "group",
@@ -38,12 +38,27 @@ export const MODULES = [
         link: "/admin/maps/mapv2",
         element: <Mapv2 />,
       },
+    ],
+  },
+  {
+    type: "group",
+    icon: <GlobalOutlined />,
+    value: "weather",
+    label: "Weather",
+    children: [
       {
-        value: "weather",
-        label: "Weather",
+        value: "weatherV1",
+        label: "WeatherV1",
         icon: <CloudOutlined />,
-        link: "/admin/maps/weather",
+        link: "/admin/weather/weatherv1",
         element: <Weather />,
+      },
+      {
+        value: "precipitation",
+        label: "Precipitation",
+        icon: <CloudOutlined />,
+        link: "/admin/weather/precipitation",
+        element: <Precipitation />,
       },
     ],
   },

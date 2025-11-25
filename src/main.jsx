@@ -29,13 +29,13 @@ createRoot(document.getElementById("root")).render(
             fontFamily: "Poppins, sans-serif",
           },
           components: {
-            Input: {
-              colorBorder: "#d1d5db",
-              colorBorderHover: "#308a4e",
-              colorPrimaryHover: "#308a4e",
-              activeBorderColor: "#308a4e",
-              activeShadow: "0 0 0 2px rgba(48,138,78,0.3)",
-            },
+            // Input: {
+            //   colorBorder: "#d1d5db",
+            //   colorBorderHover: "#308a4e",
+            //   colorPrimaryHover: "#308a4e",
+            //   activeBorderColor: "#308a4e",
+            //   activeShadow: "0 0 0 2px rgba(48,138,78,0.3)",
+            // },
             // Menu: {
             //   colorBgContainer: "#ffffff",
             //   itemSelectedBg: "#d4edda", // light green background
