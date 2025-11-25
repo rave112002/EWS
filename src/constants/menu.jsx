@@ -6,9 +6,8 @@ import {
 import Dashboard from "@pages/Dashboard";
 import Map from "@pages/Map";
 import Mapv2 from "@pages/Mapv2";
-import NotFound from "@pages/NotFound";
 import Weather from "@pages/Weather";
-import WeatherV2 from "@pages/WeatherV2";
+import Precipitation from "@pages/Precipitation";
 
 export const MODULES = [
   {
@@ -55,11 +54,11 @@ export const MODULES = [
         element: <Weather />,
       },
       {
-        value: "weatherV2",
-        label: "WeatherV2",
+        value: "precipitation",
+        label: "Precipitation",
         icon: <CloudOutlined />,
-        link: "/admin/weather/weatherv2",
-        element: <WeatherV2 />,
+        link: "/admin/weather/precipitation",
+        element: <Precipitation />,
       },
     ],
   },
