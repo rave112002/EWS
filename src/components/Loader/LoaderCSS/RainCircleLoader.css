@@ -1,0 +1,90 @@
+/* ===== Loader Wrapper ===== */
+.loader-wrapper {
+  position: relative;
+  width: 140px; /* bigger */
+  height: 140px; /* bigger */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== Spinning Blue Circle ===== */
+.loader-circle {
+  position: absolute;
+  width: 140px; /* bigger */
+  height: 140px; /* bigger */
+  border: 6px solid rgba(59, 130, 246, 0.6);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1.4s linear infinite;
+  z-index: 1;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Cloud ===== */
+.loader {
+  position: absolute;
+  top: 50%;
+  left: 45%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 18px;
+  background: #d1d5db;
+  border-radius: 100px;
+  z-index: 2;
+}
+
+.loader::before {
+  content: "";
+  position: absolute;
+  top: -15px;
+
+  width: 25px;
+  height: 25px;
+  background: #9ca3af;
+  border-radius: 50%;
+  box-shadow: 35px 0 0 18px #9ca3af;
+}
+
+/* ===== Snowflakes ===== */
+.snow {
+  position: absolute;
+  top: 110%; /* below cloud */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  z-index: 3;
+}
+
+.snow span {
+  width: 4px;
+  height: 4px;
+  background: #6b7280;
+  border-radius: 50%;
+  animation: snowing linear infinite;
+  animation-duration: calc(10s / var(--i));
+}
+
+@keyframes snowing {
+  0% {
+    transform: translateY(0px) scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(50px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(60px) scale(0);
+    opacity: 0;
+  }
+}
