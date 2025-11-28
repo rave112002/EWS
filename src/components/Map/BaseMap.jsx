@@ -1,29 +1,30 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MAP_STYLES } from "@constants/maps";
+import { MAP_STYLES, MAP_OPTIONS } from "@constants/maps";
+import { Radio } from "antd";
 
 const BaseMap = ({
   center = [121.0, 14.6],
   zoom = 12,
-  style = "dark",
-  projection = "globe",
   onMapLoad = () => {},
+  children,
 }) => {
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
+
+  const [mapStyle, setMapStyle] = useState("light");
 
   // Setup map only once
   useEffect(() => {
     if (mapInstance.current) return;
 
-    const styleUrl = MAP_STYLES[style] || MAP_STYLES["dark"];
+    const styleUrl = MAP_STYLES[mapStyle] || MAP_STYLES["satellite"];
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
       center,
       zoom,
-      projection,
     });
 
     mapInstance.current.addControl(
@@ -150,7 +151,7 @@ const BaseMap = ({
         mapInstance.current = null;
       }
     };
-  }, [style, center, zoom, onMapLoad]);
+  }, [mapStyle, center, zoom, onMapLoad]);
 
   useEffect(() => {
     if (!mapInstance.current) return;
@@ -216,6 +217,20 @@ const BaseMap = ({
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+      <div className="absolute top-2 left-2 flex flex-col gap-2">
+        <div>
+          <Radio.Group
+            block
+            options={MAP_OPTIONS}
+            defaultValue="light"
+            optionType="button"
+            buttonStyle="solid"
+            onChange={(e) => setMapStyle(e.target.value)}
+            value={mapStyle}
+          />
+        </div>
+        {children}
+      </div>
     </div>
   );
 };

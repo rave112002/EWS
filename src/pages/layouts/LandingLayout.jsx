@@ -63,13 +63,13 @@ const LandingLayout = () => {
 
       <Layout>
         <Header
-          className="bg-linear-to-r from-[#00A9FF] from-40% to-[#0d3144] to-100% h-16 px-12 items-center flex justify-between"
+          className="bg-linear-to-r from-[#0d3144] from-0% via-[#00A9FF] via-50% to-[#0d3144] to-100% h-16 px-12 items-center flex justify-between"
           style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.2)", zIndex: 1 }}
         >
           <div className=" w-full h-full items-center grid grid-cols-3 p-0">
             <span className=""></span>
-            <span className=" text-xl text-center font-bold text-white text-shadow-md">
-              Early Warning System
+            <span className=" text-2xl text-center font-bold text-white text-shadow-md">
+              OVERWATCH
             </span>
             <div className=" flex gap-4 justify-end">
               <Button

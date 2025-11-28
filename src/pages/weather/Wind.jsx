@@ -46,6 +46,7 @@ const Wind = () => {
 
   return (
     <div className="w-full h-full">
+      
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
     </div>
   );

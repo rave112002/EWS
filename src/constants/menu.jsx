@@ -4,25 +4,34 @@ import {
   GlobalOutlined,
 } from "@ant-design/icons";
 import Dashboard from "@pages/Dashboard";
-import Map from "@pages/Map";
-import MapTest from "@pages/MapTest";
-import Mapv2 from "@pages/Mapv2";
-import Weather from "@pages/Weather";
-import Wind from "@pages/Wind";
-import WindV2 from "@pages/WindV2";
+import Map from "@pages/maps/Map";
+import MapTest from "@pages/maps/MapTest";
+import Mapv2 from "@pages/maps/Mapv2";
+import Weather from "@pages/weather/Weather";
+import Wind from "@pages/weather/Wind";
+import WindV2 from "@pages/weather/WindV2";
+import { Cloud, LayoutDashboard, MapIcon, MapPlus } from "lucide-react";
 
 export const MODULES = [
   {
     type: "item",
-    icon: <AppstoreOutlined />,
+    icon: <LayoutDashboard />,
     value: "dashboard",
     label: "Dashboard",
     link: "/admin/dashboard",
     element: <Dashboard />,
   },
+  // {
+  //   type: "item",
+  //   icon: <MapIcon />,
+  //   value: "finalmap",
+  //   label: "Final Map",
+  //   link: "/admin/finalmap",
+  //   // element: <Finalmap />,
+  // },
   {
     type: "group",
-    icon: <GlobalOutlined />,
+    icon: <MapPlus />,
     value: "maps",
     label: "Maps",
     children: [
@@ -40,11 +49,18 @@ export const MODULES = [
         link: "/admin/maps/mapv2",
         element: <Mapv2 />,
       },
+      {
+        value: "mapTest",
+        label: "MapTest",
+        icon: <CloudOutlined />,
+        link: "/admin/maps/mapTest",
+        element: <MapTest />,
+      },
     ],
   },
   {
     type: "group",
-    icon: <GlobalOutlined />,
+    icon: <Cloud />,
     value: "weather",
     label: "Weather",
     children: [
@@ -55,13 +71,6 @@ export const MODULES = [
       //   link: "/admin/weather/weatherv1",
       //   element: <Weather />,
       // },
-      {
-        value: "mapTest",
-        label: "MapTest",
-        icon: <CloudOutlined />,
-        link: "/admin/weather/mapTest",
-        element: <MapTest />,
-      },
       {
         value: "wind",
         label: "Wind",
