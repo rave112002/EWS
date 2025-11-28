@@ -64,18 +64,6 @@ const MapButtons = ({
       />
 
       <ActionButton
-        activeLabel="PAR ON"
-        inactiveLabel="PAR OFF"
-        isActive={showPAR}
-        onClick={onTogglePAR}
-        className={`${
-          showPAR
-            ? "bg-blue-500 text-white hover:text-white"
-            : "bg-gray-100 text-gray-800 hover:text-gray-800"
-        }`}
-      />
-
-      <ActionButton
         activeLabel="Wind ON"
         inactiveLabel="Wind OFF"
         className="bg-gray-100 text-gray-800 hover:text-gray-800"
@@ -100,6 +88,18 @@ const MapButtons = ({
         onClick={onToggleRain}
         className={`${
           showRain
+            ? "bg-blue-500 text-white hover:text-white"
+            : "bg-gray-100 text-gray-800 hover:text-gray-800"
+        }`}
+      />
+
+      <ActionButton
+        activeLabel="PAR ON"
+        inactiveLabel="PAR OFF"
+        isActive={showPAR}
+        onClick={onTogglePAR}
+        className={`${
+          showPAR
             ? "bg-blue-500 text-white hover:text-white"
             : "bg-gray-100 text-gray-800 hover:text-gray-800"
         }`}

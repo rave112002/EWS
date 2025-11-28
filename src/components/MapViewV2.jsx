@@ -12,126 +12,12 @@ import { getHeatIndexCategory } from "../helpers/heatIndexHelpers";
 import MapButtons from "./MapButtons";
 import { getRainEffectType } from "@helpers/rainHelpers";
 import RainInfoModal from "./Modal/RainInfoModal";
-import { fetchElevationData } from "@hooks/useElevation";
-import { fetchHeatIndexData } from "@hooks/useHeatIndex";
-import { fetchWeatherData } from "@hooks/useWeather";
-import { fetchRainData } from "@hooks/useRain";
-
-// Rain Effect Component
-const RainEffect = ({ intensity = "moderate" }) => {
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const dropCounts = {
-      light: 100,
-      moderate: 250,
-      heavy: 400,
-    };
-    const dropCount = dropCounts[intensity] || 250;
-
-    class Raindrop {
-      constructor() {
-        this.reset();
-      }
-
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height - canvas.height;
-        this.length = Math.random() * 20 + 10;
-        this.speed = Math.random() * 3 + 4;
-        this.opacity = Math.random() * 0.3 + 0.3;
-      }
-
-      update() {
-        this.y += this.speed;
-        if (this.y > canvas.height) {
-          this.reset();
-        }
-      }
-
-      draw() {
-        ctx.strokeStyle = `rgba(174, 194, 224, ${this.opacity})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x, this.y + this.length);
-        ctx.stroke();
-      }
-    }
-
-    const drops = Array.from({ length: dropCount }, () => new Raindrop());
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drops.forEach((drop) => {
-        drop.update();
-        drop.draw();
-      });
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [intensity]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 pointer-events-none z-50"
-      style={{ opacity: 0.7 }}
-    />
-  );
-};
-
-// Thunder Effect Component
-const ThunderEffect = () => {
-  const [flash, setFlash] = useState(false);
-
-  useEffect(() => {
-    const triggerFlash = () => {
-      setFlash(true);
-      setTimeout(() => setFlash(false), 100);
-
-      const nextFlash = Math.random() * 5000 + 3000;
-      setTimeout(triggerFlash, nextFlash);
-    };
-
-    const initialDelay = setTimeout(triggerFlash, Math.random() * 3000 + 1000);
-
-    return () => clearTimeout(initialDelay);
-  }, []);
-
-  return (
-    <div
-      className={`absolute inset-0 pointer-events-none z-50 transition-opacity duration-100 ${
-        flash ? "opacity-30" : "opacity-0"
-      }`}
-      style={{ backgroundColor: "#FFFFFF" }}
-    />
-  );
-};
-
+import { getWeatherData } from "@hooks/api/api-weather";
+import { getElevationData } from "@hooks/api/api-elevation";
+import { getHeatIndexData } from "@hooks/api/api-heat-index";
+import { getRainData } from "@hooks/api/api-rain";
+import RainEffect from "./Map Effect/RainEffect";
+import ThunderEffect from "./Map Effect/ThunderEffect";
 const MapViewV2 = () => {
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -170,17 +56,17 @@ const MapViewV2 = () => {
 
     try {
       if (showWeatherRef.current) {
-        const result = await fetchWeatherData(lat, lon, barangayName);
+        const result = await getWeatherData(lat, lon, barangayName);
         setWeatherData(result);
       } else if (showElevationRef.current) {
-        const result = await fetchElevationData(
+        const result = await getElevationData(
           barangayName,
           psgc,
           elevationCacheRef
         );
         setElevationData(result);
       } else if (showHeatIndexRef.current) {
-        const result = await fetchHeatIndexData(
+        const result = await getHeatIndexData(
           lat,
           lon,
           barangayName,
@@ -188,7 +74,7 @@ const MapViewV2 = () => {
         );
         setHeatIndexData(result);
       } else if (showRainRef.current) {
-        const result = await fetchRainData(
+        const result = await getRainData(
           lat,
           lon,
           barangayName,
@@ -696,7 +582,7 @@ const MapViewV2 = () => {
       map.current.setPaintProperty(
         "combined-fill-3d",
         "fill-extrusion-color",
-        "#8AFF8A"
+        "#6B8E99"
       );
     }
 
@@ -716,7 +602,7 @@ const MapViewV2 = () => {
     setElevationData(null);
     setHeatIndexData(null);
 
-    if (showElevation || showWeather || showHeatIndex) {
+    if (showElevation || showWeather || showHeatIndex || showRain) {
       // Reset to original elevation heights
       const elevationCache = elevationCacheRef.current;
       map.current.setPaintProperty(
@@ -756,6 +642,13 @@ const MapViewV2 = () => {
           "fill-extrusion-color",
           "#89cff0"
         );
+      } else if (showRain) {
+        // Reset weather mode to all sky blue
+        map.current.setPaintProperty(
+          "combined-fill-3d",
+          "fill-extrusion-color",
+          "#6B8E99"
+        );
       } else {
         map.current.setPaintProperty(
           "combined-fill-3d",
@@ -794,8 +687,6 @@ const MapViewV2 = () => {
     );
   };
 
-  // Helper function to check if coordinates are within PAR
-  // Helper function to check if coordinates are within PAR
   const isWithinPAR = (lat, lon) => {
     // Philippine Area of Responsibility (PAR) bounds
     // These are approximate coordinates for PAR
@@ -1364,6 +1255,17 @@ const MapViewV2 = () => {
                 ["==", ["get", "adm4_psgc"], clickedPsgc],
                 "#0000FF", // Blue for clicked/selected barangay
                 "#89cff0", // Sky blue for all other barangays
+              ]
+            );
+          } else if (isRainOn) {
+            map.current.setPaintProperty(
+              "combined-fill-3d",
+              "fill-extrusion-color",
+              [
+                "case",
+                ["==", ["get", "adm4_psgc"], clickedPsgc],
+                "#0000FF", // Blue for clicked/selected barangay
+                "#6B8E99", // Sky blue for all other barangays
               ]
             );
           } else {

@@ -1,4 +1,4 @@
-export const fetchElevationData = async (
+export const getElevationData = async (
   barangayName,
   psgc,
   elevationCacheRef

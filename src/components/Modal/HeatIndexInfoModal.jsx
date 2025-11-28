@@ -51,9 +51,9 @@ const HeatIndexInfoModal = ({ visible, onClose, heatIndexData, loading }) => {
                 className="flex justify-between items-center p-3 rounded"
                 style={{ backgroundColor: heatIndexData.color + "40" }}
               >
-                <span className="text-gray-600">Apparent Temp:</span>
+                <span className="text-gray-600">Heat Index:</span>
                 <span className="font-bold text-gray-800">
-                  {heatIndexData.apparentTemperature.toFixed(1)}°C
+                  {heatIndexData.heatIndex.toFixed(1)}°C
                 </span>
               </div>
 

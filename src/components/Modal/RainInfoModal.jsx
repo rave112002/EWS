@@ -4,7 +4,7 @@ const RainInfoModal = ({ visible, onClose, rainData, loading }) => {
   if (!visible) return null;
 
   return (
-    <div className="absolute top-20 left-4 bg-white rounded-lg shadow-xl p-6 z-40 max-w-sm">
+    <div className="absolute top-2.5 right-2.5 bg-white rounded-lg shadow-xl p-6 z-40 max-w-sm">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-xl font-bold text-gray-800">
           {rainData?.barangay || "Loading..."}
