@@ -7,6 +7,7 @@ const BaseMap = ({
   center = [121.0, 14.6],
   zoom = 12,
   style = "dark",
+  projection = "globe",
   onMapLoad = () => {},
 }) => {
   const mapContainer = useRef(null);
@@ -22,6 +23,7 @@ const BaseMap = ({
       style: styleUrl,
       center,
       zoom,
+      projection,
     });
 
     mapInstance.current.addControl(
@@ -33,7 +35,14 @@ const BaseMap = ({
 
     // Initial sources/layers
     mapInstance.current.on("load", () => {
-      onMapLoad(mapInstance.current);
+      // mapInstance.current.setFog({
+      //   range: [-1, 2],
+      //   color: "white",
+      //   "high-color": "#d8f2ff",
+      //   "horizon-blend": 0.1,
+      //   "space-color": "#000010",
+      //   "star-intensity": 0.5,
+      // });
 
       // --- PAR BORDER ---
       fetch("/data/par.geojson")
@@ -131,6 +140,8 @@ const BaseMap = ({
             mapInstance.current.fitBounds(bounds, { padding: 40 });
           }
         });
+
+      onMapLoad(mapInstance.current);
     });
 
     return () => {

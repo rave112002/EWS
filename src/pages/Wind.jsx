@@ -11,24 +11,36 @@ const Wind = () => {
   const windLayerRef = useRef(null);
 
   useEffect(() => {
-    config.apiKey = MAPTILER_KEY; // <-- This works with @maptiler/sdk
+    config.apiKey = MAPTILER_KEY;
 
-    mapRef.current = new Map({
+    const map = new Map({
       container: mapContainer.current,
-      style: MapStyle.DARK, // or MapStyle.BACKDROP, etc.
+      style: MapStyle.OUTDOOR,
       center: [121, 14.6],
       zoom: 4,
-      projection: "globe",
+      projection: "mercator",
       projectionControl: true,
     });
+    mapRef.current = map;
 
-    windLayerRef.current = new WindLayer();
-    mapRef.current.on("load", () => {
-      mapRef.current.addLayer(windLayerRef.current);
+    const wind = new WindLayer({ id: "mt-wind" });
+    windLayerRef.current = wind;
+
+    map.on("load", () => {
+      map.addLayer(wind, "Country border");
+
+      // wait until the map is idle (finished initial rendering/updates)
+      map.once("idle", () => {
+        if (map.getLayer("mt-wind")) {
+          wind.setOpacity(0.4);
+        }
+      });
     });
 
     return () => {
-      mapRef.current?.remove();
+      map?.remove();
+      mapRef.current = null;
+      windLayerRef.current = null;
     };
   }, []);
 
