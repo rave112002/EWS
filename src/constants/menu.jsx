@@ -35,7 +35,7 @@ export const MODULES = [
       },
       {
         value: "mapv2",
-        label: "Mapv2",
+        label: "Map V2",
         icon: <GlobalOutlined />,
         link: "/admin/maps/mapv2",
         element: <Mapv2 />,
@@ -48,13 +48,13 @@ export const MODULES = [
     value: "weather",
     label: "Weather",
     children: [
-      {
-        value: "weatherV1",
-        label: "WeatherV1",
-        icon: <CloudOutlined />,
-        link: "/admin/weather/weatherv1",
-        element: <Weather />,
-      },
+      // {
+      //   value: "weatherV1",
+      //   label: "WeatherV1",
+      //   icon: <CloudOutlined />,
+      //   link: "/admin/weather/weatherv1",
+      //   element: <Weather />,
+      // },
       {
         value: "mapTest",
         label: "MapTest",
@@ -69,13 +69,13 @@ export const MODULES = [
         link: "/admin/weather/wind",
         element: <Wind />,
       },
-      {
-        value: "windV2",
-        label: "WindV2",
-        icon: <CloudOutlined />,
-        link: "/admin/weather/windv2",
-        element: <WindV2 />,
-      },
+      // {
+      //   value: "windV2",
+      //   label: "WindV2",
+      //   icon: <CloudOutlined />,
+      //   link: "/admin/weather/windv2",
+      //   element: <WindV2 />,
+      // },
     ],
   },
 ];
