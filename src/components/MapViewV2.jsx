@@ -1149,11 +1149,11 @@ const MapViewV2 = () => {
             }`}
           />
 
-          <ActionButton
+          {/* <ActionButton
             activeLabel="Wind ON"
             inactiveLabel="Wind OFF"
             className="bg-gray-100 text-gray-800 hover:text-gray-800"
-          />
+          /> */}
 
           <ActionButton
             activeLabel="Heat Index ON"

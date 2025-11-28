@@ -5,9 +5,11 @@ import {
 } from "@ant-design/icons";
 import Dashboard from "@pages/Dashboard";
 import Map from "@pages/Map";
+import MapTest from "@pages/MapTest";
 import Mapv2 from "@pages/Mapv2";
 import Weather from "@pages/Weather";
-import Precipitation from "@pages/Precipitation";
+import Wind from "@pages/Wind";
+import WindV2 from "@pages/WindV2";
 
 export const MODULES = [
   {
@@ -54,11 +56,25 @@ export const MODULES = [
         element: <Weather />,
       },
       {
-        value: "precipitation",
-        label: "Precipitation",
+        value: "mapTest",
+        label: "MapTest",
         icon: <CloudOutlined />,
-        link: "/admin/weather/precipitation",
-        element: <Precipitation />,
+        link: "/admin/weather/mapTest",
+        element: <MapTest />,
+      },
+      {
+        value: "wind",
+        label: "Wind",
+        icon: <CloudOutlined />,
+        link: "/admin/weather/wind",
+        element: <Wind />,
+      },
+      {
+        value: "windV2",
+        label: "WindV2",
+        icon: <CloudOutlined />,
+        link: "/admin/weather/windv2",
+        element: <WindV2 />,
       },
     ],
   },
