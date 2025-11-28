@@ -7,6 +7,7 @@ const BaseMap = ({
   center = [121.0, 14.6],
   zoom = 12,
   style = "dark",
+  projection = "globe",
   onMapLoad = () => {},
 }) => {
   const mapContainer = useRef(null);
@@ -16,12 +17,13 @@ const BaseMap = ({
   useEffect(() => {
     if (mapInstance.current) return;
 
-    const styleUrl = MAP_STYLES[style] || MAP_STYLES["satellite"];
+    const styleUrl = MAP_STYLES[style] || MAP_STYLES["dark"];
     mapInstance.current = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
       center,
       zoom,
+      projection,
     });
 
     mapInstance.current.addControl(
@@ -33,7 +35,14 @@ const BaseMap = ({
 
     // Initial sources/layers
     mapInstance.current.on("load", () => {
-      onMapLoad(mapInstance.current);
+      // mapInstance.current.setFog({
+      //   range: [-1, 2],
+      //   color: "white",
+      //   "high-color": "#d8f2ff",
+      //   "horizon-blend": 0.1,
+      //   "space-color": "#000010",
+      //   "star-intensity": 0.5,
+      // });
 
       // --- PAR BORDER ---
       fetch("/data/par.geojson")
@@ -77,8 +86,8 @@ const BaseMap = ({
               type: "fill",
               source: "taguig-boundary",
               paint: {
-                "fill-color": "#8AFF8A",
-                "fill-opacity": 0.4,
+                "fill-color": "#008000",
+                "fill-opacity": 0.3,
               },
             });
           }
@@ -131,6 +140,8 @@ const BaseMap = ({
             mapInstance.current.fitBounds(bounds, { padding: 40 });
           }
         });
+
+      onMapLoad(mapInstance.current);
     });
 
     return () => {

@@ -1,5 +1,5 @@
 import { GlobalOutlined, PieChartOutlined } from "@ant-design/icons";
-import { ewsTransparent } from "@assets/images";
+import { overwatchBlue } from "@assets/images";
 import { MODULES } from "@constants/menu";
 import { Button, Layout, Menu } from "antd";
 import { Content, Header } from "antd/es/layout/layout";
@@ -47,7 +47,7 @@ const LandingLayout = () => {
       >
         <div className="flex flex-col w-full items-center">
           <div className=" text-center h-60 w-60 rounded-2xl justify-center items-center flex my-4">
-            <img src={ewsTransparent} alt="logo" className="w-full" />
+            <img src={overwatchBlue} alt="logo" className="w-48" />
           </div>
 
           <Menu
@@ -63,7 +63,7 @@ const LandingLayout = () => {
 
       <Layout>
         <Header
-          className="bg-blue-700 h-16 px-12 items-center flex justify-between"
+          className="bg-linear-to-r from-[#00A9FF] from-40% to-[#0d3144] to-100% h-16 px-12 items-center flex justify-between"
           style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.2)", zIndex: 1 }}
         >
           <div className=" w-full h-full items-center grid grid-cols-3 p-0">
